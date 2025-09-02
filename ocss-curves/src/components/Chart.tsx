@@ -9,6 +9,7 @@ type Props = {
     containerRef: React.RefObject<HTMLDivElement>;
     targetTemp: number;
     carbonTarget: number;
+    alarmMargin: number;
     alarmEvents: AlarmEvent[]; // new
 };
 
@@ -19,6 +20,7 @@ export default function Chart({
                                   containerRef,
                                   targetTemp,
                                   carbonTarget,
+                                  alarmMargin,
                                   alarmEvents,
                               }: Props) {
     if (data.length < 2) {
@@ -100,8 +102,10 @@ export default function Chart({
                         scaleCarbonY(carbonTarget - alarmMargin, chartHeight, padding) -
                         scaleCarbonY(carbonTarget + alarmMargin, chartHeight, padding)
                     }
-                    fill="rgba(0, 255, 0, 0.1)"   // green transparent zone
-                    stroke="none"
+                    fill="rgba(255, 0, 0, 0.15)"   // red transparent zone
+                    stroke="red"
+                    strokeWidth={1}
+                    strokeDasharray="4,4"
                 />
 
                 {/* Target lines */}

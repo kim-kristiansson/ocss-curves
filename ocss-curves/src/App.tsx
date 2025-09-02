@@ -37,6 +37,7 @@ export default function App() {
                     containerRef={containerRef}
                     targetTemp={sim.targetTemp}
                     carbonTarget={sim.carbonTarget}
+                    alarmMargin={sim.alarmMargin}
                     alarmEvents={sim.alarmEvents}
                 />
             </div>

@@ -49,8 +49,8 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
         const tick = () => {
             setData((prev) => {
-                let lastCarbon = prev.length ? prev[prev.length - 1].carbon : 0;
-                let lastTemp = prev.length ? prev[prev.length - 1].temperature : 0;
+                const lastCarbon = prev.length ? prev[prev.length - 1].carbon : 0;
+                const lastTemp = prev.length ? prev[prev.length - 1].temperature : 0;
 
                 simTimeRef.current += stepMs;
 
