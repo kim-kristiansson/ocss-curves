@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 
 type AlarmEvent = { time: number; value: number };
 
@@ -25,32 +25,45 @@ export default function Chart({
                               }: Props) {
     const [windowMs, setWindowMs] = useState<number | null>(null);
 
-    if (data.length < 2) {
+    const hasData = data.length >= 2;
+    const padding = 60;
+
+    const fullMinTime = hasData ? data[0].time : 0;
+    const fullMaxTime = hasData ? data[data.length - 1].time : 0;
+
+    const handleWheel = useCallback(
+        (e: WheelEvent) => {
+            e.preventDefault();
+            const fullRange = fullMaxTime - fullMinTime;
+            const current = windowMs ?? fullRange;
+            if (e.deltaY < 0) {
+                const next = Math.max(1000, current * 0.9);
+                setWindowMs(next);
+            } else {
+                const next = current * 1.1;
+                if (next >= fullRange) setWindowMs(null);
+                else setWindowMs(next);
+            }
+        },
+        [fullMaxTime, fullMinTime, windowMs]
+    );
+
+    useEffect(() => {
+        const node = containerRef.current;
+        if (!node) return;
+        node.addEventListener("wheel", handleWheel, {passive: false});
+        return () => {
+            node.removeEventListener("wheel", handleWheel);
+        };
+    }, [containerRef, handleWheel]);
+
+    if (!hasData) {
         return (
             <div ref={containerRef} className="chart-container">
                 Ingen data ännu
             </div>
         );
     }
-
-    const padding = 60;
-
-    const fullMinTime = data[0].time;
-    const fullMaxTime = data[data.length - 1].time;
-
-    const handleWheel = (e: React.WheelEvent) => {
-        e.preventDefault();
-        const fullRange = fullMaxTime - fullMinTime;
-        const current = windowMs ?? fullRange;
-        if (e.deltaY < 0) {
-            const next = Math.max(1000, current * 0.9);
-            setWindowMs(next);
-        } else {
-            const next = current * 1.1;
-            if (next >= fullRange) setWindowMs(null);
-            else setWindowMs(next);
-        }
-    };
 
     const maxTime = fullMaxTime;
     const minTime =
@@ -88,7 +101,7 @@ export default function Chart({
             .join(" ");
 
     return (
-        <div className="chart-container" ref={containerRef} onWheel={handleWheel}>
+        <div className="chart-container" ref={containerRef}>
             <svg
                 viewBox={`0 0 ${chartWidth} ${chartHeight}`}
                 preserveAspectRatio="xMidYMid meet"
