@@ -73,26 +73,30 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
                 const measuredCarbon = lastCarbon + carbonDrift + noiseStateRef.current;
 
-                // 10s moving average
-                const windowMs = 10 * 1000;
-                const cutoff = simTimeRef.current - windowMs;
-                const slice = prev.filter((d) => d.time >= cutoff);
-                const avg =
-                    slice.reduce((sum, d) => sum + d.carbon, 0) / (slice.length || 1);
-
-                const newPoint = {
+                const basePoint = {
                     time: simTimeRef.current,
                     carbon: measuredCarbon,
                     temperature: measuredTemp,
-                    carbonAvg: avg,
                 };
+
+
+                // 10s moving average
+                const windowMs = 10 * 1000;
+                const cutoff = simTimeRef.current - windowMs;
+                const slice = [...prev, basePoint].filter((d) => d.time >= cutoff);
+                const avg =
+                    slice.reduce((sum, d) => sum + d.carbon, 0) / (slice.length || 1);
+
+                const newPoint = { ...basePoint, carbonAvg: avg };
 
                 setCurrentTemp(measuredTemp);
                 setCurrentCarbon(measuredCarbon);
                 setAvgCarbon(avg);
 
                 // Return new array (append 1 point per tick)
-                return [...prev, newPoint];
+                const historyMs = 60 * 1000;
+                const historyCutoff = simTimeRef.current - historyMs;
+                return [...prev, newPoint].filter((d) => d.time >= historyCutoff);
             });
         };
 
