@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 
 type AlarmEvent = { time: number; value: number };
 
@@ -23,6 +23,8 @@ export default function Chart({
                                   alarmMargin,
                                   alarmEvents,
                               }: Props) {
+    const [windowMs, setWindowMs] = useState<number | null>(null);
+
     if (data.length < 2) {
         return (
             <div ref={containerRef} className="chart-container">
@@ -31,9 +33,32 @@ export default function Chart({
         );
     }
 
-    const minTime = data[0].time;
-    const maxTime = data[data.length - 1].time;
     const padding = 60;
+
+    const fullMinTime = data[0].time;
+    const fullMaxTime = data[data.length - 1].time;
+
+    const handleWheel = (e: React.WheelEvent) => {
+        e.preventDefault();
+        const fullRange = fullMaxTime - fullMinTime;
+        const current = windowMs ?? fullRange;
+        if (e.deltaY < 0) {
+            const next = Math.max(1000, current * 0.9);
+            setWindowMs(next);
+        } else {
+            const next = current * 1.1;
+            if (next >= fullRange) setWindowMs(null);
+            else setWindowMs(next);
+        }
+    };
+
+    const maxTime = fullMaxTime;
+    const minTime =
+        windowMs == null
+            ? fullMinTime
+            : Math.max(fullMaxTime - windowMs, fullMinTime);
+
+    const visibleData = data.filter((d) => d.time >= minTime);
 
     const scaleX = (t: number, width: number, pad: number) =>
         ((t - minTime) / (maxTime - minTime)) * (width - pad * 2) + pad;
@@ -51,7 +76,7 @@ export default function Chart({
         height: number,
         pad: number
     ) =>
-        data
+        visibleData
             .map(
                 (d, i) =>
                     `${i === 0 ? "M" : "L"} ${scaleX(d.time, width, pad)} ${scaleFn(
@@ -63,7 +88,7 @@ export default function Chart({
             .join(" ");
 
     return (
-        <div className="chart-container" ref={containerRef}>
+        <div className="chart-container" ref={containerRef} onWheel={handleWheel}>
             <svg
                 viewBox={`0 0 ${chartWidth} ${chartHeight}`}
                 preserveAspectRatio="xMidYMid meet"
@@ -127,17 +152,19 @@ export default function Chart({
                 />
 
                 {/* Alarm markers */}
-                {alarmEvents.map((evt, i) => (
-                    <circle
-                        key={i}
-                        cx={scaleX(evt.time, chartWidth, padding)}
-                        cy={scaleCarbonY(evt.value, chartHeight, padding)}
-                        r={5}
-                        fill="yellow"
-                        stroke="black"
-                        strokeWidth={1}
-                    />
-                ))}
+                {alarmEvents
+                    .filter((evt) => evt.time >= minTime)
+                    .map((evt, i) => (
+                        <circle
+                            key={i}
+                            cx={scaleX(evt.time, chartWidth, padding)}
+                            cy={scaleCarbonY(evt.value, chartHeight, padding)}
+                            r={5}
+                            fill="yellow"
+                            stroke="black"
+                            strokeWidth={1}
+                        />
+                    ))}
             </svg>
 
             <style>{`
