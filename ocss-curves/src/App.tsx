@@ -12,19 +12,17 @@ export default function App() {
 
     const scenarioPoints = useMemo(() => {
         let time = 0;
+        let lastTemp = 0;
+        let lastCarbon = 0;
         const pts: { time: number; temperature: number; carbon: number }[] = [];
         scenario.forEach((step) => {
-            pts.push({
-                time,
-                temperature: step.tempFrom,
-                carbon: step.carbonFrom,
-            });
+            if (step.tempFrom !== undefined) lastTemp = step.tempFrom;
+            if (step.carbonFrom !== undefined) lastCarbon = step.carbonFrom;
+            pts.push({ time, temperature: lastTemp, carbon: lastCarbon });
             time += step.duration * 60 * 1000;
-            pts.push({
-                time,
-                temperature: step.tempTo,
-                carbon: step.carbonTo,
-            });
+            if (step.tempTo !== undefined) lastTemp = step.tempTo;
+            if (step.carbonTo !== undefined) lastCarbon = step.carbonTo;
+            pts.push({ time, temperature: lastTemp, carbon: lastCarbon });
         });
         return pts;
     }, [scenario]);

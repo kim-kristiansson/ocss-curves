@@ -4,13 +4,21 @@ export type AlarmEvent = { time: number; value: number };
 
 export type ScenarioStep = {
     duration: number; // minutes
-    tempFrom: number;
-    tempTo: number;
-    carbonFrom: number;
-    carbonTo: number;
+    tempFrom?: number;
+    tempTo?: number;
+    carbonFrom?: number;
+    carbonTo?: number;
+    responsivenessFrom?: number;
+    responsivenessTo?: number;
+    noiseFrom?: number;
+    noiseTo?: number;
+    offsetFrom?: number;
+    offsetTo?: number;
+    alarmMarginFrom?: number;
+    alarmMarginTo?: number;
 };
 
-const DEFAULTS = {
+export const DEFAULTS = {
     carbonTarget: 1.2,
     responsiveness: 0.1,
     noise: 0.05,
@@ -49,6 +57,22 @@ export function useSimulation(
     const [offset, setOffset] = useState(DEFAULTS.offset);
 
     const [alarmMargin, setAlarmMargin] = useState(DEFAULTS.alarmMargin);
+    const responsivenessRef = useRef(responsiveness);
+    useEffect(() => {
+        responsivenessRef.current = responsiveness;
+    }, [responsiveness]);
+    const noiseRef = useRef(noise);
+    useEffect(() => {
+        noiseRef.current = noise;
+    }, [noise]);
+    const offsetRef = useRef(offset);
+    useEffect(() => {
+        offsetRef.current = offset;
+    }, [offset]);
+    const alarmMarginRef = useRef(alarmMargin);
+    useEffect(() => {
+        alarmMarginRef.current = alarmMargin;
+    }, [alarmMargin]);
     const [alarm, setAlarm] = useState(false);
     const [alarmEvents, setAlarmEvents] = useState<AlarmEvent[]>([]);
 
@@ -86,7 +110,8 @@ export function useSimulation(
                 simTimeRef.current += stepMs;
 
                 let setTemp = targetTempRef.current;
-                let setCarbon = carbonTargetRef.current + offset;
+                let baseCarbon = carbonTargetRef.current;
+                let offsetVal = offsetRef.current;
 
                 const steps = scenarioRef.current;
                 if (steps.length > 0) {
@@ -96,13 +121,69 @@ export function useSimulation(
                         1,
                         scenarioElapsedRef.current / durationMs
                     );
-                    setTemp =
-                        step.tempFrom +
-                        (step.tempTo - step.tempFrom) * progress;
-                    setCarbon =
-                        step.carbonFrom +
-                        (step.carbonTo - step.carbonFrom) * progress +
-                        offset;
+
+                    if (
+                        step.offsetFrom !== undefined &&
+                        step.offsetTo !== undefined
+                    ) {
+                        offsetVal =
+                            step.offsetFrom +
+                            (step.offsetTo - step.offsetFrom) * progress;
+                        offsetRef.current = offsetVal;
+                        setOffset(offsetVal);
+                    }
+
+                    if (step.tempFrom !== undefined && step.tempTo !== undefined) {
+                        setTemp =
+                            step.tempFrom +
+                            (step.tempTo - step.tempFrom) * progress;
+                        targetTempRef.current = setTemp;
+                        setTargetTemp(setTemp);
+                    }
+
+                    if (
+                        step.carbonFrom !== undefined &&
+                        step.carbonTo !== undefined
+                    ) {
+                        baseCarbon =
+                            step.carbonFrom +
+                            (step.carbonTo - step.carbonFrom) * progress;
+                        carbonTargetRef.current = baseCarbon;
+                        setCarbonTarget(baseCarbon);
+                    }
+
+                    if (
+                        step.responsivenessFrom !== undefined &&
+                        step.responsivenessTo !== undefined
+                    ) {
+                        const val =
+                            step.responsivenessFrom +
+                            (step.responsivenessTo - step.responsivenessFrom) *
+                                progress;
+                        responsivenessRef.current = val;
+                        setResponsiveness(val);
+                    }
+
+                    if (step.noiseFrom !== undefined && step.noiseTo !== undefined) {
+                        const val =
+                            step.noiseFrom +
+                            (step.noiseTo - step.noiseFrom) * progress;
+                        noiseRef.current = val;
+                        setNoise(val);
+                    }
+
+                    if (
+                        step.alarmMarginFrom !== undefined &&
+                        step.alarmMarginTo !== undefined
+                    ) {
+                        const val =
+                            step.alarmMarginFrom +
+                            (step.alarmMarginTo - step.alarmMarginFrom) *
+                                progress;
+                        alarmMarginRef.current = val;
+                        setAlarmMargin(val);
+                    }
+
                     scenarioElapsedRef.current += stepMs;
                     if (
                         progress >= 1 &&
@@ -111,10 +192,6 @@ export function useSimulation(
                         scenarioIndexRef.current++;
                         scenarioElapsedRef.current = 0;
                     }
-                    targetTempRef.current = setTemp;
-                    carbonTargetRef.current = setCarbon - offset;
-                    setTargetTemp(setTemp);
-                    setCarbonTarget(setCarbon - offset);
                 } else {
                     const rampTime = 60 * 1000;
                     const progress = Math.min(
@@ -122,18 +199,21 @@ export function useSimulation(
                         simTimeRef.current / rampTime
                     );
                     setTemp = progress * targetTempRef.current;
-                    setCarbon = progress * carbonTargetRef.current + offset;
+                    baseCarbon = progress * carbonTargetRef.current;
                 }
+
+                const setCarbon = baseCarbon + offsetVal;
 
                 // Temperature (gentle approach to setpoint)
                 let measuredTemp = lastTemp + (setTemp - lastTemp) * (stepMs / 5000);
                 if (Math.random() < 0.02) measuredTemp += Math.random() * 4 - 2;
 
                 // Carbon with filtered noise
-                const drift = 1 - Math.exp(-responsiveness * (stepMs / 1000));
+                const drift =
+                    1 - Math.exp(-responsivenessRef.current * (stepMs / 1000));
                 const carbonDrift = (setCarbon - lastCarbon) * drift;
 
-                const randomShock = (Math.random() * 2 - 1) * noise;
+                const randomShock = (Math.random() * 2 - 1) * noiseRef.current;
                 noiseStateRef.current =
                     noiseStateRef.current * 0.9 + randomShock * 0.1;
 
@@ -165,7 +245,7 @@ export function useSimulation(
 
         const interval = setInterval(tick, stepMs / Math.max(1, speed));
         return () => clearInterval(interval);
-    }, [running, speed, responsiveness, noise, offset, stepMs]);
+    }, [running, speed, stepMs]);
 
     // Alarm check
     useEffect(() => {

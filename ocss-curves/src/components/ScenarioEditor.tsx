@@ -1,4 +1,4 @@
-import { type ScenarioStep } from "../hooks/useSimulation";
+import { type ScenarioStep, DEFAULTS } from "../hooks/useSimulation";
 
 type Props = {
     scenario: ScenarioStep[];
@@ -20,8 +20,46 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
     const addStep = () =>
         setScenario([
             ...scenario,
-            { duration: 10, tempFrom: 0, tempTo: 0, carbonFrom: 0, carbonTo: 0 },
+            {
+                duration: 10,
+                tempFrom: 0,
+                tempTo: 0,
+                carbonFrom: 0,
+                carbonTo: 0,
+                responsivenessFrom: DEFAULTS.responsiveness,
+                responsivenessTo: DEFAULTS.responsiveness,
+                noiseFrom: DEFAULTS.noise,
+                noiseTo: DEFAULTS.noise,
+                offsetFrom: DEFAULTS.offset,
+                offsetTo: DEFAULTS.offset,
+                alarmMarginFrom: DEFAULTS.alarmMargin,
+                alarmMarginTo: DEFAULTS.alarmMargin,
+            },
         ]);
+
+    const fieldDefs: {
+        from: keyof ScenarioStep;
+        to: keyof ScenarioStep;
+        label: string;
+        step?: string;
+    }[] = [
+        { from: "tempFrom", to: "tempTo", label: "Temp" },
+        { from: "carbonFrom", to: "carbonTo", label: "Kolhalt", step: "0.01" },
+        {
+            from: "responsivenessFrom",
+            to: "responsivenessTo",
+            label: "Respons",
+            step: "0.01",
+        },
+        { from: "noiseFrom", to: "noiseTo", label: "Brus", step: "0.01" },
+        { from: "offsetFrom", to: "offsetTo", label: "Offset", step: "0.01" },
+        {
+            from: "alarmMarginFrom",
+            to: "alarmMarginTo",
+            label: "Alarm-marginal",
+            step: "0.01",
+        },
+    ];
 
     const removeStep = (index: number) =>
         setScenario(scenario.filter((_, i) => i !== index));
@@ -41,48 +79,50 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                             }
                         />
                     </label>
-                    <label>
-                        Temp från:
-                        <input
-                            type="number"
-                            value={step.tempFrom}
-                            onChange={(e) =>
-                                updateStep(i, "tempFrom", +e.target.value)
-                            }
-                        />
-                    </label>
-                    <label>
-                        Temp till:
-                        <input
-                            type="number"
-                            value={step.tempTo}
-                            onChange={(e) =>
-                                updateStep(i, "tempTo", +e.target.value)
-                            }
-                        />
-                    </label>
-                    <label>
-                        Kolhalt från:
-                        <input
-                            type="number"
-                            step="0.01"
-                            value={step.carbonFrom}
-                            onChange={(e) =>
-                                updateStep(i, "carbonFrom", +e.target.value)
-                            }
-                        />
-                    </label>
-                    <label>
-                        Kolhalt till:
-                        <input
-                            type="number"
-                            step="0.01"
-                            value={step.carbonTo}
-                            onChange={(e) =>
-                                updateStep(i, "carbonTo", +e.target.value)
-                            }
-                        />
-                    </label>
+                    {fieldDefs.map(({ from, to, label, step: stepVal }) => (
+                        <div key={from} className="field-pair">
+                            <label>
+                                {label} från:
+                                <input
+                                    type="number"
+                                    step={stepVal}
+                                    value={
+                                        (step as Record<
+                                            keyof ScenarioStep,
+                                            number | undefined
+                                        >)[from] ?? 0
+                                    }
+                                    onChange={(e) =>
+                                        updateStep(
+                                            i,
+                                            from as keyof ScenarioStep,
+                                            +e.target.value
+                                        )
+                                    }
+                                />
+                            </label>
+                            <label>
+                                {label} till:
+                                <input
+                                    type="number"
+                                    step={stepVal}
+                                    value={
+                                        (step as Record<
+                                            keyof ScenarioStep,
+                                            number | undefined
+                                        >)[to] ?? 0
+                                    }
+                                    onChange={(e) =>
+                                        updateStep(
+                                            i,
+                                            to as keyof ScenarioStep,
+                                            +e.target.value
+                                        )
+                                    }
+                                />
+                            </label>
+                        </div>
+                    ))}
                     <button onClick={() => removeStep(i)}>Ta bort</button>
                 </div>
             ))}
