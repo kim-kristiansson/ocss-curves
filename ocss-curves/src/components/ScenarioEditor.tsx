@@ -104,6 +104,7 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                 >
                     <div
                         className="drag-handle"
+                        title="Dra för att flytta"
                         draggable
                         onDragStart={() => handleDragStart(i)}
                         onDragEnd={() => setDragIndex(null)}
@@ -130,26 +131,28 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                         </label>
                         {(step.type === "carbon" || step.type === "temperature") && (
                             <>
-                                <label>
-                                    Tid till börvärde (min):
-                                    <input
-                                        type="number"
-                                        value={step.ramp}
-                                        onChange={(e) =>
-                                            updateStep(i, { ramp: +e.target.value })
-                                        }
-                                    />
-                                </label>
-                                <label>
-                                    Varaktighet (min):
-                                    <input
-                                        type="number"
-                                        value={step.duration}
-                                        onChange={(e) =>
-                                            updateStep(i, { duration: +e.target.value })
-                                        }
-                                    />
-                                </label>
+                                <div className="field-pair">
+                                    <label>
+                                        Tid till börvärde (min):
+                                        <input
+                                            type="number"
+                                            value={step.ramp}
+                                            onChange={(e) =>
+                                                updateStep(i, { ramp: +e.target.value })
+                                            }
+                                        />
+                                    </label>
+                                    <label>
+                                        Varaktighet (min):
+                                        <input
+                                            type="number"
+                                            value={step.duration}
+                                            onChange={(e) =>
+                                                updateStep(i, { duration: +e.target.value })
+                                            }
+                                        />
+                                    </label>
+                                </div>
                                 <label>
                                     Börvärde:
                                     <input
