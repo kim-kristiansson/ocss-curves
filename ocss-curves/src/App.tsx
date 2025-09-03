@@ -15,8 +15,9 @@ export default function App() {
     useEffect(() => {
         const handleResize = () => {
             const w = window.innerWidth;
+            const h = window.innerHeight;
             setChartWidth(w);
-            setChartHeight(Math.round(w * 0.6));
+            setChartHeight(Math.round(h * 0.6));
         };
         handleResize();
         window.addEventListener("resize", handleResize);
