@@ -5,7 +5,22 @@ export type AlarmEvent = { time: number; value: number };
 export type ScenarioStep =
     | { type: "temperature"; duration: number; from: number; to: number }
     | { type: "carbon"; duration: number; from: number; to: number }
-    | { type: "value"; duration: number; from: number; to: number };
+    | {
+          type: "controls";
+          duration: number;
+          from: {
+              responsiveness: number;
+              noise: number;
+              offset: number;
+              alarmMargin: number;
+          };
+          to: {
+              responsiveness: number;
+              noise: number;
+              offset: number;
+              alarmMargin: number;
+          };
+      };
 
 export const DEFAULTS = {
     carbonTarget: 1.2,
@@ -58,7 +73,6 @@ export function useSimulation(
     useEffect(() => {
         offsetRef.current = offset;
     }, [offset]);
-    const baseOffsetRef = useRef(offset);
     const alarmMarginRef = useRef(alarmMargin);
     useEffect(() => {
         alarmMarginRef.current = alarmMargin;
@@ -120,27 +134,35 @@ export function useSimulation(
                         baseCarbon = step.from + (step.to - step.from) * progress;
                         carbonTargetRef.current = baseCarbon;
                         setCarbonTarget(baseCarbon);
-                    } else if (step.type === "value") {
-                        if (scenarioElapsedRef.current === 0) {
-                            baseOffsetRef.current = offsetRef.current;
-                        }
-                        offsetVal =
-                            step.from + (step.to - step.from) * progress;
-                        offsetRef.current = offsetVal;
-                        setOffset(offsetVal);
+                    } else if (step.type === "controls") {
+                        const newResp =
+                            step.from.responsiveness +
+                            (step.to.responsiveness - step.from.responsiveness) * progress;
+                        const newNoise =
+                            step.from.noise +
+                            (step.to.noise - step.from.noise) * progress;
+                        const newOffset =
+                            step.from.offset +
+                            (step.to.offset - step.from.offset) * progress;
+                        const newMargin =
+                            step.from.alarmMargin +
+                            (step.to.alarmMargin - step.from.alarmMargin) * progress;
+
+                        responsivenessRef.current = newResp;
+                        setResponsiveness(newResp);
+                        noiseRef.current = newNoise;
+                        setNoise(newNoise);
+                        offsetVal = newOffset;
+                        offsetRef.current = newOffset;
+                        setOffset(newOffset);
+                        alarmMarginRef.current = newMargin;
+                        setAlarmMargin(newMargin);
                     }
 
                     scenarioElapsedRef.current += stepMs;
-                    if (progress >= 1) {
-                        if (step.type === "value") {
-                            offsetVal = baseOffsetRef.current;
-                            offsetRef.current = offsetVal;
-                            setOffset(offsetVal);
-                        }
-                        if (scenarioIndexRef.current < steps.length - 1) {
-                            scenarioIndexRef.current++;
-                            scenarioElapsedRef.current = 0;
-                        }
+                    if (progress >= 1 && scenarioIndexRef.current < steps.length - 1) {
+                        scenarioIndexRef.current++;
+                        scenarioElapsedRef.current = 0;
                     }
                 } else {
                     const rampTime = 60 * 1000;

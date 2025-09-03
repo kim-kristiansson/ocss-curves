@@ -1,4 +1,4 @@
-import { type ScenarioStep } from "../hooks/useSimulation";
+import { type ScenarioStep, DEFAULTS } from "../hooks/useSimulation";
 
 type Props = {
     scenario: ScenarioStep[];
@@ -7,7 +7,9 @@ type Props = {
 
 export default function ScenarioEditor({ scenario, setScenario }: Props) {
     const updateStep = (index: number, changes: Partial<ScenarioStep>) => {
-        const updated = scenario.map((s, i) => (i === index ? { ...s, ...changes } : s));
+        const updated = scenario.map((s, i) =>
+            i === index ? { ...s, ...changes } : s
+        ) as ScenarioStep[];
         setScenario(updated);
     };
 
@@ -29,15 +31,32 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                         Typ:
                         <select
                             value={step.type}
-                            onChange={(e) =>
-                                updateStep(i, {
-                                    type: e.target.value as ScenarioStep["type"],
-                                })
-                            }
+                            onChange={(e) => {
+                                const type = e.target.value as ScenarioStep["type"];
+                                if (type === "controls") {
+                                    updateStep(i, {
+                                        type,
+                                        from: {
+                                            responsiveness: DEFAULTS.responsiveness,
+                                            noise: DEFAULTS.noise,
+                                            offset: DEFAULTS.offset,
+                                            alarmMargin: DEFAULTS.alarmMargin,
+                                        },
+                                        to: {
+                                            responsiveness: DEFAULTS.responsiveness,
+                                            noise: DEFAULTS.noise,
+                                            offset: DEFAULTS.offset,
+                                            alarmMargin: DEFAULTS.alarmMargin,
+                                        },
+                                    } as ScenarioStep);
+                                } else {
+                                    updateStep(i, { type, from: 0, to: 0 } as ScenarioStep);
+                                }
+                            }}
                         >
                             <option value="carbon">Kolhalt</option>
                             <option value="temperature">Temperatur</option>
-                            <option value="value">Kolvärde</option>
+                            <option value="controls">Manipulering</option>
                         </select>
                     </label>
                     <label>
@@ -80,34 +99,148 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                             </label>
                         </div>
                     )}
-                    {step.type === "value" && (
-                        <div className="field-pair">
-                            <label>
-                                Från:
-                                <input
-                                    type="number"
-                                    step={0.01}
-                                    min={-1}
-                                    max={1}
-                                    value={step.from}
-                                    onChange={(e) =>
-                                        updateStep(i, { from: +e.target.value })
-                                    }
-                                />
-                            </label>
-                            <label>
-                                Till:
-                                <input
-                                    type="number"
-                                    step={0.01}
-                                    min={-1}
-                                    max={1}
-                                    value={step.to}
-                                    onChange={(e) =>
-                                        updateStep(i, { to: +e.target.value })
-                                    }
-                                />
-                            </label>
+                    {step.type === "controls" && (
+                        <div className="controls-fields">
+                            <div className="field-pair">
+                                <label>
+                                    Responsiveness från:
+                                    <input
+                                        type="number"
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
+                                        value={step.from.responsiveness}
+                                        onChange={(e) =>
+                                            updateStep(i, {
+                                                from: {
+                                                    ...step.from,
+                                                    responsiveness: +e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    till:
+                                    <input
+                                        type="number"
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
+                                        value={step.to.responsiveness}
+                                        onChange={(e) =>
+                                            updateStep(i, {
+                                                to: {
+                                                    ...step.to,
+                                                    responsiveness: +e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                </label>
+                            </div>
+                            <div className="field-pair">
+                                <label>
+                                    Noise från:
+                                    <input
+                                        type="number"
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
+                                        value={step.from.noise}
+                                        onChange={(e) =>
+                                            updateStep(i, {
+                                                from: { ...step.from, noise: +e.target.value },
+                                            })
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    till:
+                                    <input
+                                        type="number"
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
+                                        value={step.to.noise}
+                                        onChange={(e) =>
+                                            updateStep(i, {
+                                                to: { ...step.to, noise: +e.target.value },
+                                            })
+                                        }
+                                    />
+                                </label>
+                            </div>
+                            <div className="field-pair">
+                                <label>
+                                    Offset från:
+                                    <input
+                                        type="number"
+                                        step={0.01}
+                                        min={-1}
+                                        max={1}
+                                        value={step.from.offset}
+                                        onChange={(e) =>
+                                            updateStep(i, {
+                                                from: { ...step.from, offset: +e.target.value },
+                                            })
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    till:
+                                    <input
+                                        type="number"
+                                        step={0.01}
+                                        min={-1}
+                                        max={1}
+                                        value={step.to.offset}
+                                        onChange={(e) =>
+                                            updateStep(i, {
+                                                to: { ...step.to, offset: +e.target.value },
+                                            })
+                                        }
+                                    />
+                                </label>
+                            </div>
+                            <div className="field-pair">
+                                <label>
+                                    Alarm-marginal från:
+                                    <input
+                                        type="number"
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
+                                        value={step.from.alarmMargin}
+                                        onChange={(e) =>
+                                            updateStep(i, {
+                                                from: {
+                                                    ...step.from,
+                                                    alarmMargin: +e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                </label>
+                                <label>
+                                    till:
+                                    <input
+                                        type="number"
+                                        step={0.01}
+                                        min={0}
+                                        max={1}
+                                        value={step.to.alarmMargin}
+                                        onChange={(e) =>
+                                            updateStep(i, {
+                                                to: {
+                                                    ...step.to,
+                                                    alarmMargin: +e.target.value,
+                                                },
+                                            })
+                                        }
+                                    />
+                                </label>
+                            </div>
                         </div>
                     )}
                     <button onClick={() => removeStep(i)}>Ta bort</button>
