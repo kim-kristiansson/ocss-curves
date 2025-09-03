@@ -72,6 +72,7 @@ export default function App() {
             <Alarm
                 alarm={sim.alarm}
                 avgCarbon={sim.avgCarbon}
+                carbonTarget={sim.carbonTarget}
                 alarmMargin={sim.alarmMargin}
                 avgWindow={sim.avgWindow}
                 onAcknowledge={sim.acknowledgeAlarm}
