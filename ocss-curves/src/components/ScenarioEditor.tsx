@@ -91,18 +91,25 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                     />
                 </label>
             </div>
+            <p className="drag-hint">Dra och släpp stegen för att ändra ordning</p>
             {scenario.steps.map((step, i) => (
                 <div
                     key={i}
-                    className="scenario-step"
-                    draggable
-                    onDragStart={() => handleDragStart(i)}
+                    className={`scenario-step ${dragIndex === i ? "dragging" : ""}`}
                     onDragOver={allowDrop}
                     onDrop={(e) => {
                         e.stopPropagation();
                         handleDrop(i);
                     }}
                 >
+                    <span
+                        className="drag-handle"
+                        draggable
+                        onDragStart={() => handleDragStart(i)}
+                        onDragEnd={() => setDragIndex(null)}
+                    >
+                        ⋮⋮
+                    </span>
                     <label>
                         Typ:
                         <select
