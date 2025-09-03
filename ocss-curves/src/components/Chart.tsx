@@ -100,6 +100,15 @@ export default function Chart({
             )
             .join(" ");
 
+    const legendItems = [
+        {label: "Temperatur", color: "red"},
+        {label: "Kolhalt", color: "green"},
+        {label: "Kolhalt (medel)", color: "blue", dash: "5,5"},
+    ];
+
+    const alarmTop = scaleCarbonY(carbonTarget + alarmMargin, chartHeight, padding);
+    const alarmBottom = scaleCarbonY(carbonTarget - alarmMargin, chartHeight, padding);
+
     return (
         <div className="chart-container" ref={containerRef}>
             <svg
@@ -132,19 +141,45 @@ export default function Chart({
                     strokeDasharray="5,5"
                 />
 
+                {/* Legend */}
+                <g className="legend">
+                    {legendItems.map((item, idx) => (
+                        <g key={item.label} transform={`translate(${padding + 10}, ${padding + idx * 20})`}>
+                            <line
+                                x1={0}
+                                x2={20}
+                                y1={10}
+                                y2={10}
+                                stroke={item.color}
+                                strokeWidth={2}
+                                strokeDasharray={item.dash}
+                            />
+                            <text x={25} y={14} fill="#fff" fontSize={12}>
+                                {item.label}
+                            </text>
+                        </g>
+                    ))}
+                </g>
+
                 <rect
                     x={padding}
                     width={chartWidth - padding * 2}
-                    y={scaleCarbonY(carbonTarget + alarmMargin, chartHeight, padding)}
-                    height={
-                        scaleCarbonY(carbonTarget - alarmMargin, chartHeight, padding) -
-                        scaleCarbonY(carbonTarget + alarmMargin, chartHeight, padding)
-                    }
+                    y={alarmTop}
+                    height={alarmBottom - alarmTop}
                     fill="rgba(255, 0, 0, 0.15)"   // red transparent zone
                     stroke="red"
                     strokeWidth={1}
                     strokeDasharray="4,4"
                 />
+
+                <text
+                    x={chartWidth - padding - 80}
+                    y={alarmTop + 14}
+                    fill="red"
+                    fontSize={12}
+                >
+                    Larmzon
+                </text>
 
                 {/* Target lines */}
                 <line
