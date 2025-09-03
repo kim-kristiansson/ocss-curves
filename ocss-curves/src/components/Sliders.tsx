@@ -1,6 +1,8 @@
 import React from "react";
 
 export default function Sliders({
+                                    targetTemp,
+                                    setTargetTemp,
                                     carbonTarget,
                                     setCarbonTarget,
                                     responsiveness,
@@ -16,6 +18,17 @@ export default function Sliders({
                                 }) {
     return (
         <div className="sliders">
+            <label>
+                Börvärde temperatur: {targetTemp.toFixed(0)}°C
+                <input
+                    type="range"
+                    min="0"
+                    max="1000"
+                    step="1"
+                    value={targetTemp}
+                    onChange={(e) => setTargetTemp(+e.target.value)}
+                />
+            </label>
             <label>
                 Börvärde kolhalt: {carbonTarget.toFixed(2)}
                 <input type="range" min="0" max="2" step="0.01" value={carbonTarget} onChange={(e) => setCarbonTarget(+e.target.value)} />

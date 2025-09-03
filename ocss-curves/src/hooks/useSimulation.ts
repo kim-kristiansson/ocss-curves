@@ -9,9 +9,10 @@ const DEFAULTS = {
     offset: 0,
     alarmMargin: 0.2,
     avgWindow: 10,
+    targetTemp: 860,
 };
 
-export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
+export function useSimulation(stepMs: number = 100) {
     const [data, setData] = useState<
         { time: number; carbon: number; temperature: number; carbonAvg: number }[]
     >([]);
@@ -19,6 +20,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
     const [speed, setSpeed] = useState(1);
 
     const [carbonTarget, setCarbonTarget] = useState(DEFAULTS.carbonTarget);
+    const [targetTemp, setTargetTemp] = useState(DEFAULTS.targetTemp);
     const [currentTemp, setCurrentTemp] = useState(0);
     const [currentCarbon, setCurrentCarbon] = useState(0);
     const [avgCarbon, setAvgCarbon] = useState(0);
@@ -44,6 +46,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
         setOffset(DEFAULTS.offset);
         setAlarmMargin(DEFAULTS.alarmMargin);
         setAvgWindow(DEFAULTS.avgWindow);
+        setTargetTemp(DEFAULTS.targetTemp);
     };
 
     // Simulation loop (interval speeds up with `speed`)
@@ -130,6 +133,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
         speed,
         setSpeed,
         targetTemp,
+        setTargetTemp,
         carbonTarget,
         setCarbonTarget,
         currentTemp,

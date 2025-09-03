@@ -6,7 +6,7 @@ import Sliders from "./components/Sliders";
 import Alarm from "./components/Alarm";
 
 export default function App() {
-    const sim = useSimulation(860);
+    const sim = useSimulation();
 
     const [chartWidth, setChartWidth] = useState(1200);
     const [chartHeight, setChartHeight] = useState(600);
@@ -55,6 +55,8 @@ export default function App() {
             </div>
 
             <Sliders
+                targetTemp={sim.targetTemp}
+                setTargetTemp={sim.setTargetTemp}
                 carbonTarget={sim.carbonTarget}
                 setCarbonTarget={sim.setCarbonTarget}
                 responsiveness={sim.responsiveness}
