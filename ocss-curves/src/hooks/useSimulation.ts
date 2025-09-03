@@ -107,17 +107,38 @@ export function useSimulation(
 
     const simTimeRef = useRef(0);
     const noiseStateRef = useRef(0);
-    type RuntimeStep = ScenarioStep & { start: number };
-    const scenarioRef = useRef<RuntimeStep[]>([]);
+    type TempStep = Extract<ScenarioStep, { type: "temperature" }> & { start: number };
+    type CarbonStep = Extract<ScenarioStep, { type: "carbon" }> & { start: number };
+    type ControlStep = Extract<ScenarioStep, { type: "controls" }> & { start: number };
+
+    const tempStepsRef = useRef<TempStep[]>([]);
+    const carbonStepsRef = useRef<CarbonStep[]>([]);
+    const controlStepsRef = useRef<ControlStep[]>([]);
 
     useEffect(() => {
-        let t = 0;
-        const runtime: RuntimeStep[] = scenario.map((s) => {
-            const stepWithStart = { ...s, start: t } as RuntimeStep;
-            t += s.type === "controls" ? s.duration : s.ramp + s.duration;
-            return stepWithStart;
+        let tempT = 0;
+        let carbonT = 0;
+        let controlT = 0;
+        const temps: TempStep[] = [];
+        const carbons: CarbonStep[] = [];
+        const controls: ControlStep[] = [];
+
+        scenario.forEach((s) => {
+            if (s.type === "temperature") {
+                temps.push({ ...s, start: tempT });
+                tempT += s.ramp + s.duration;
+            } else if (s.type === "carbon") {
+                carbons.push({ ...s, start: carbonT });
+                carbonT += s.ramp + s.duration;
+            } else {
+                controls.push({ ...s, start: controlT });
+                controlT += s.duration;
+            }
         });
-        scenarioRef.current = runtime;
+
+        tempStepsRef.current = temps;
+        carbonStepsRef.current = carbons;
+        controlStepsRef.current = controls;
     }, [scenario]);
 
     const acknowledgeAlarm = () => setAlarm(false);
@@ -144,84 +165,93 @@ export function useSimulation(
                 let setTemp = targetTempRef.current;
                 let baseCarbon = carbonTargetRef.current;
                 let offsetVal = offsetRef.current;
+                let respVal = responsivenessRef.current;
+                let noiseVal = noiseRef.current;
+                let marginVal = alarmMarginRef.current;
 
-                const steps = scenarioRef.current;
-                if (steps.length > 0) {
+                if (
+                    tempStepsRef.current.length > 0 ||
+                    carbonStepsRef.current.length > 0 ||
+                    controlStepsRef.current.length > 0
+                ) {
                     let tempBase = initialTemp;
-                    let carbonBase = initialCarbon;
-                    steps.forEach((step) => {
+                    tempStepsRef.current.forEach((step) => {
                         const startMs = step.start * 60 * 1000;
                         if (simTimeRef.current < startMs) return;
-
-                        if (step.type === "temperature") {
-                            const rampMs = step.ramp * 60 * 1000;
-                            const progress = Math.min(
-                                1,
-                                (simTimeRef.current - startMs) /
-                                    Math.max(1, rampMs)
-                            );
-                            setTemp =
+                        const rampMs = step.ramp * 60 * 1000;
+                        const progress = Math.min(
+                            1,
+                            (simTimeRef.current - startMs) /
+                                Math.max(1, rampMs)
+                        );
+                        setTemp =
+                            tempBase + (step.target - tempBase) * progress;
+                        if (simTimeRef.current >= startMs + rampMs) {
+                            tempBase = step.target;
+                        } else {
+                            tempBase =
                                 tempBase +
                                 (step.target - tempBase) * progress;
-                            if (simTimeRef.current >= startMs + rampMs) {
-                                tempBase = step.target;
-                            } else {
-                                tempBase =
-                                    tempBase +
-                                    (step.target - tempBase) * progress;
-                            }
-                            targetTempRef.current = setTemp;
-                            setTargetTemp(setTemp);
-                        } else if (step.type === "carbon") {
-                            const rampMs = step.ramp * 60 * 1000;
-                            const progress = Math.min(
-                                1,
-                                (simTimeRef.current - startMs) /
-                                    Math.max(1, rampMs)
-                            );
-                            baseCarbon =
-                                carbonBase +
-                                (step.target - carbonBase) * progress;
-                            if (simTimeRef.current >= startMs + rampMs) {
-                                carbonBase = step.target;
-                            } else {
-                                carbonBase =
-                                    carbonBase +
-                                    (step.target - carbonBase) * progress;
-                            }
-                            carbonTargetRef.current = baseCarbon;
-                            setCarbonTarget(baseCarbon);
-                        } else if (step.type === "controls") {
-                            const endMs = startMs + step.duration * 60 * 1000;
-                            const progress = Math.min(
-                                1,
-                                (simTimeRef.current - startMs) /
-                                    Math.max(1, endMs - startMs)
-                            );
-                            const newResp =
-                                step.from.responsiveness +
-                                (step.to.responsiveness - step.from.responsiveness) * progress;
-                            const newNoise =
-                                step.from.noise +
-                                (step.to.noise - step.from.noise) * progress;
-                            const newOffset =
-                                step.from.offset +
-                                (step.to.offset - step.from.offset) * progress;
-                            const newMargin =
-                                step.from.alarmMargin +
-                                (step.to.alarmMargin - step.from.alarmMargin) * progress;
-
-                            responsivenessRef.current = newResp;
-                            setResponsiveness(newResp);
-                            noiseRef.current = newNoise;
-                            setNoise(newNoise);
-                            offsetVal = newOffset;
-                            offsetRef.current = newOffset;
-                            setOffset(newOffset);
-                            alarmMarginRef.current = newMargin;
-                            setAlarmMargin(newMargin);
                         }
                     });
+                    targetTempRef.current = setTemp;
+                    setTargetTemp(setTemp);
+
+                    let carbonBase = initialCarbon;
+                    carbonStepsRef.current.forEach((step) => {
+                        const startMs = step.start * 60 * 1000;
+                        if (simTimeRef.current < startMs) return;
+                        const rampMs = step.ramp * 60 * 1000;
+                        const progress = Math.min(
+                            1,
+                            (simTimeRef.current - startMs) /
+                                Math.max(1, rampMs)
+                        );
+                        baseCarbon =
+                            carbonBase + (step.target - carbonBase) * progress;
+                        if (simTimeRef.current >= startMs + rampMs) {
+                            carbonBase = step.target;
+                        } else {
+                            carbonBase =
+                                carbonBase +
+                                (step.target - carbonBase) * progress;
+                        }
+                    });
+                    carbonTargetRef.current = baseCarbon;
+                    setCarbonTarget(baseCarbon);
+
+                    controlStepsRef.current.forEach((step) => {
+                        const startMs = step.start * 60 * 1000;
+                        if (simTimeRef.current < startMs) return;
+                        const endMs = startMs + step.duration * 60 * 1000;
+                        const progress = Math.min(
+                            1,
+                            (simTimeRef.current - startMs) /
+                                Math.max(1, endMs - startMs)
+                        );
+                        respVal =
+                            step.from.responsiveness +
+                            (step.to.responsiveness - step.from.responsiveness) *
+                                progress;
+                        noiseVal =
+                            step.from.noise +
+                            (step.to.noise - step.from.noise) * progress;
+                        offsetVal =
+                            step.from.offset +
+                            (step.to.offset - step.from.offset) * progress;
+                        marginVal =
+                            step.from.alarmMargin +
+                            (step.to.alarmMargin - step.from.alarmMargin) *
+                                progress;
+                    });
+                    responsivenessRef.current = respVal;
+                    setResponsiveness(respVal);
+                    noiseRef.current = noiseVal;
+                    setNoise(noiseVal);
+                    offsetRef.current = offsetVal;
+                    setOffset(offsetVal);
+                    alarmMarginRef.current = marginVal;
+                    setAlarmMargin(marginVal);
                 } else {
                     const rampTime = 60 * 1000;
                     const progress = Math.min(

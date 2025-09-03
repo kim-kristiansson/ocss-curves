@@ -21,35 +21,65 @@ export default function App() {
     );
 
     const scenarioPoints = useMemo(() => {
-        const pts: { time: number; temperature: number; carbon: number }[] = [];
+        type Pt = { time: number; temperature: number; carbon: number };
+        const tempEvents: { time: number; temperature: number }[] = [];
+        const carbonEvents: { time: number; carbon: number }[] = [];
+
         let temp = scenario.startTemp;
         let carbon = scenario.startCarbon;
-        pts.push({ time: 0, temperature: temp, carbon });
 
-        let currentTime = 0;
+        tempEvents.push({ time: 0, temperature: temp });
+        carbonEvents.push({ time: 0, carbon });
+
+        let tempTime = 0;
+        let carbonTime = 0;
+
         scenario.steps.forEach((s) => {
-            const startMs = currentTime * 60 * 1000;
-            pts.push({ time: startMs, temperature: temp, carbon });
             if (s.type === "temperature") {
-                const rampEnd = startMs + s.ramp * 60 * 1000;
+                const start = tempTime * 60 * 1000;
+                tempEvents.push({ time: start, temperature: temp });
+                const rampEnd = start + s.ramp * 60 * 1000;
                 temp = s.target;
-                pts.push({ time: rampEnd, temperature: temp, carbon });
+                tempEvents.push({ time: rampEnd, temperature: temp });
                 const end = rampEnd + s.duration * 60 * 1000;
-                pts.push({ time: end, temperature: temp, carbon });
-                currentTime += s.ramp + s.duration;
+                tempEvents.push({ time: end, temperature: temp });
+                tempTime += s.ramp + s.duration;
             } else if (s.type === "carbon") {
-                const rampEnd = startMs + s.ramp * 60 * 1000;
+                const start = carbonTime * 60 * 1000;
+                carbonEvents.push({ time: start, carbon });
+                const rampEnd = start + s.ramp * 60 * 1000;
                 carbon = s.target;
-                pts.push({ time: rampEnd, temperature: temp, carbon });
+                carbonEvents.push({ time: rampEnd, carbon });
                 const end = rampEnd + s.duration * 60 * 1000;
-                pts.push({ time: end, temperature: temp, carbon });
-                currentTime += s.ramp + s.duration;
-            } else {
-                const end = startMs + s.duration * 60 * 1000;
-                pts.push({ time: end, temperature: temp, carbon });
-                currentTime += s.duration;
+                carbonEvents.push({ time: end, carbon });
+                carbonTime += s.ramp + s.duration;
             }
         });
+
+        const times = Array.from(
+            new Set([
+                ...tempEvents.map((e) => e.time),
+                ...carbonEvents.map((e) => e.time),
+            ])
+        ).sort((a, b) => a - b);
+
+        const pts: Pt[] = [];
+        let ti = 0;
+        let ci = 0;
+        let lastTemp = scenario.startTemp;
+        let lastCarbon = scenario.startCarbon;
+        times.forEach((t) => {
+            while (ti < tempEvents.length && tempEvents[ti].time <= t) {
+                lastTemp = tempEvents[ti].temperature;
+                ti++;
+            }
+            while (ci < carbonEvents.length && carbonEvents[ci].time <= t) {
+                lastCarbon = carbonEvents[ci].carbon;
+                ci++;
+            }
+            pts.push({ time: t, temperature: lastTemp, carbon: lastCarbon });
+        });
+
         return pts;
     }, [scenario]);
 
