@@ -222,7 +222,7 @@ export default function Chart({
 
             <style>{`
         .chart-container {
-          width: 100vw;
+          width: 100%;
           height: 60vh;
           background: #222;
           border: 1px solid #444;
