@@ -5,21 +5,18 @@ export type AlarmEvent = { time: number; value: number };
 export type ScenarioStep =
     | {
           type: "temperature";
-          start: number; // minutes from simulation start
           target: number; // desired setpoint
           ramp: number; // minutes to reach target
           duration: number; // minutes to hold after ramp
       }
     | {
           type: "carbon";
-          start: number;
           target: number;
           ramp: number;
           duration: number;
       }
     | {
           type: "controls";
-          start: number;
           duration: number;
           from: {
               responsiveness: number;
@@ -110,11 +107,17 @@ export function useSimulation(
 
     const simTimeRef = useRef(0);
     const noiseStateRef = useRef(0);
-    const scenarioRef = useRef<ScenarioStep[]>(scenario);
+    type RuntimeStep = ScenarioStep & { start: number };
+    const scenarioRef = useRef<RuntimeStep[]>([]);
 
     useEffect(() => {
-        // keep steps sorted by start time for deterministic evaluation
-        scenarioRef.current = [...scenario].sort((a, b) => a.start - b.start);
+        let t = 0;
+        const runtime: RuntimeStep[] = scenario.map((s) => {
+            const stepWithStart = { ...s, start: t } as RuntimeStep;
+            t += s.type === "controls" ? s.duration : s.ramp + s.duration;
+            return stepWithStart;
+        });
+        scenarioRef.current = runtime;
     }, [scenario]);
 
     const acknowledgeAlarm = () => setAlarm(false);

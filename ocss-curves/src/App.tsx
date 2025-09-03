@@ -26,9 +26,9 @@ export default function App() {
         let carbon = scenario.startCarbon;
         pts.push({ time: 0, temperature: temp, carbon });
 
-        const steps = [...scenario.steps].sort((a, b) => a.start - b.start);
-        steps.forEach((s) => {
-            const startMs = s.start * 60 * 1000;
+        let currentTime = 0;
+        scenario.steps.forEach((s) => {
+            const startMs = currentTime * 60 * 1000;
             pts.push({ time: startMs, temperature: temp, carbon });
             if (s.type === "temperature") {
                 const rampEnd = startMs + s.ramp * 60 * 1000;
@@ -36,15 +36,18 @@ export default function App() {
                 pts.push({ time: rampEnd, temperature: temp, carbon });
                 const end = rampEnd + s.duration * 60 * 1000;
                 pts.push({ time: end, temperature: temp, carbon });
+                currentTime += s.ramp + s.duration;
             } else if (s.type === "carbon") {
                 const rampEnd = startMs + s.ramp * 60 * 1000;
                 carbon = s.target;
                 pts.push({ time: rampEnd, temperature: temp, carbon });
                 const end = rampEnd + s.duration * 60 * 1000;
                 pts.push({ time: end, temperature: temp, carbon });
+                currentTime += s.ramp + s.duration;
             } else {
                 const end = startMs + s.duration * 60 * 1000;
                 pts.push({ time: end, temperature: temp, carbon });
+                currentTime += s.duration;
             }
         });
         return pts;

@@ -20,7 +20,6 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                 ...scenario.steps,
                 {
                     type: "carbon",
-                    start: 0,
                     target: scenario.startCarbon,
                     ramp: 10,
                     duration: 0,
@@ -108,16 +107,6 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                             <option value="temperature">Temperatur</option>
                             <option value="controls">Manipulering</option>
                         </select>
-                    </label>
-                    <label>
-                        Start (min):
-                        <input
-                            type="number"
-                            value={step.start}
-                            onChange={(e) =>
-                                updateStep(i, { start: +e.target.value })
-                            }
-                        />
                     </label>
                     {(step.type === "carbon" || step.type === "temperature") && (
                         <>
