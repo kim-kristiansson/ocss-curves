@@ -105,6 +105,8 @@ export default function Chart({
         {label: "Kolhalt", color: "green"},
         {label: "Kolhalt (medel)", color: "blue", dash: "5,5"},
     ];
+    const labelFontSize = 16;
+    const legendSpacing = labelFontSize + 8;
 
     const alarmTop = scaleCarbonY(carbonTarget + alarmMargin, chartHeight, padding);
     const alarmBottom = scaleCarbonY(carbonTarget - alarmMargin, chartHeight, padding);
@@ -144,17 +146,20 @@ export default function Chart({
                 {/* Legend */}
                 <g className="legend">
                     {legendItems.map((item, idx) => (
-                        <g key={item.label} transform={`translate(${padding + 10}, ${padding + idx * 20})`}>
+                        <g
+                            key={item.label}
+                            transform={`translate(${padding + 10}, ${padding + idx * legendSpacing})`}
+                        >
                             <line
                                 x1={0}
                                 x2={20}
-                                y1={10}
-                                y2={10}
+                                y1={labelFontSize / 2}
+                                y2={labelFontSize / 2}
                                 stroke={item.color}
                                 strokeWidth={2}
                                 strokeDasharray={item.dash}
                             />
-                            <text x={25} y={14} fill="#fff" fontSize={12}>
+                            <text x={25} y={labelFontSize} fill="#fff" fontSize={labelFontSize}>
                                 {item.label}
                             </text>
                         </g>
@@ -174,9 +179,9 @@ export default function Chart({
 
                 <text
                     x={chartWidth - padding - 80}
-                    y={alarmTop + 14}
+                    y={alarmTop + labelFontSize}
                     fill="red"
-                    fontSize={12}
+                    fontSize={labelFontSize}
                 >
                     Larmzon
                 </text>
