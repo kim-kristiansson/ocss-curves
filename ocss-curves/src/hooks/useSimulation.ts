@@ -2,6 +2,15 @@ import { useState, useRef, useEffect } from "react";
 
 export type AlarmEvent = { time: number; value: number };
 
+export type ScenarioEffect = {
+    start: number; // minutes from step start
+    duration: number; // minutes this effect applies
+    responsiveness: number;
+    noise: number;
+    offset: number;
+    alarmMargin: number;
+};
+
 export type ScenarioStep =
     | {
           type: "temperature";
@@ -14,13 +23,7 @@ export type ScenarioStep =
           target: number;
           ramp: number;
           duration: number;
-          effect?: {
-              start: number; // minutes from step start
-              responsiveness: number;
-              noise: number;
-              offset: number;
-              alarmMargin: number;
-          };
+          effects?: ScenarioEffect[];
       };
 
 export type Scenario = {
@@ -147,10 +150,10 @@ export function useSimulation(
 
                 let setTemp = targetTempRef.current;
                 let baseCarbon = carbonTargetRef.current;
-                let offsetVal = offsetRef.current;
-                let respVal = responsivenessRef.current;
-                let noiseVal = noiseRef.current;
-                let marginVal = alarmMarginRef.current;
+                let offsetVal = DEFAULTS.offset;
+                let respVal = DEFAULTS.responsiveness;
+                let noiseVal = DEFAULTS.noise;
+                let marginVal = DEFAULTS.alarmMargin;
 
                 if (
                     tempStepsRef.current.length > 0 ||
@@ -183,8 +186,6 @@ export function useSimulation(
                     carbonStepsRef.current.forEach((step) => {
                         const startMs = step.start * 60 * 1000;
                         const rampMs = step.ramp * 60 * 1000;
-                        const endMs =
-                            startMs + (step.ramp + step.duration) * 60 * 1000;
                         if (simTimeRef.current < startMs) return;
                         const progress = Math.min(
                             1,
@@ -201,17 +202,22 @@ export function useSimulation(
                                 (step.target - carbonBase) * progress;
                         }
 
-                        if (step.effect) {
-                            const effectMs =
-                                startMs + step.effect.start * 60 * 1000;
-                            if (
-                                simTimeRef.current >= effectMs &&
-                                simTimeRef.current <= endMs
-                            ) {
-                                respVal = step.effect.responsiveness;
-                                noiseVal = step.effect.noise;
-                                offsetVal = step.effect.offset;
-                                marginVal = step.effect.alarmMargin;
+                        if (step.effects) {
+                            for (const eff of step.effects) {
+                                const effStart =
+                                    startMs + eff.start * 60 * 1000;
+                                const effEnd =
+                                    effStart + eff.duration * 60 * 1000;
+                                if (
+                                    simTimeRef.current >= effStart &&
+                                    simTimeRef.current < effEnd
+                                ) {
+                                    respVal = eff.responsiveness;
+                                    noiseVal = eff.noise;
+                                    offsetVal = eff.offset;
+                                    marginVal = eff.alarmMargin;
+                                    break;
+                                }
                             }
                         }
                     });

@@ -114,7 +114,7 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                                     target: 0,
                                     ramp: 0,
                                     duration: 0,
-                                    effect: undefined,
+                                    effects: undefined,
                                 } as ScenarioStep);
                             }}
                         >
@@ -159,140 +159,146 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                             </label>
                             {step.type === "carbon" && (
                                 <>
-                                    <label>
-                                        Manipulering från (min):
-                                        <input
-                                            type="number"
-                                            min={0}
-                                            max={step.ramp + step.duration}
-                                            value={step.effect?.start ?? 0}
-                                            onChange={(e) =>
-                                                updateStep(i, {
-                                                    effect: {
-                                                        ...(step.effect ?? {
-                                                            responsiveness:
-                                                                DEFAULTS.responsiveness,
-                                                            noise: DEFAULTS.noise,
-                                                            offset: DEFAULTS.offset,
-                                                            alarmMargin:
-                                                                DEFAULTS.alarmMargin,
-                                                        }),
-                                                        start: +e.target.value,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                    </label>
-                                    <div className="controls-fields">
-                                        <div className="field-pair">
-                                            <label>
-                                                Responsiveness:
-                                                <input
-                                                    type="number"
-                                                    step={0.01}
-                                                    min={0}
-                                                    max={1}
-                                                    value={step.effect?.responsiveness ?? DEFAULTS.responsiveness}
-                                                    onChange={(e) =>
-                                                        updateStep(i, {
-                                                            effect: {
-                                                                ...(step.effect ?? {
-                                                                    start: 0,
-                                                                    noise:
-                                                                        DEFAULTS.noise,
-                                                                    offset:
-                                                                        DEFAULTS.offset,
-                                                                    alarmMargin:
-                                                                        DEFAULTS.alarmMargin,
-                                                                }),
-                                                                responsiveness:
-                                                                    +e.target.value,
-                                                            },
-                                                        })
-                                                    }
-                                                />
-                                            </label>
-                                            <label>
-                                                Noise:
-                                                <input
-                                                    type="number"
-                                                    step={0.01}
-                                                    min={0}
-                                                    max={1}
-                                                    value={step.effect?.noise ?? DEFAULTS.noise}
-                                                    onChange={(e) =>
-                                                        updateStep(i, {
-                                                            effect: {
-                                                                ...(step.effect ?? {
-                                                                    start: 0,
-                                                                    responsiveness:
-                                                                        DEFAULTS.responsiveness,
-                                                                    offset:
-                                                                        DEFAULTS.offset,
-                                                                    alarmMargin:
-                                                                        DEFAULTS.alarmMargin,
-                                                                }),
+                                    {step.effects?.map((eff, j) => (
+                                        <div key={j} className="controls-fields">
+                                            <div className="field-pair">
+                                                <label>
+                                                    Start (min):
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        max={step.ramp + step.duration}
+                                                        value={eff.start}
+                                                        onChange={(e) => {
+                                                            const effects = [...(step.effects ?? [])];
+                                                            effects[j] = {
+                                                                ...effects[j],
+                                                                start: +e.target.value,
+                                                            };
+                                                            updateStep(i, { effects });
+                                                        }}
+                                                    />
+                                                </label>
+                                                <label>
+                                                    Varaktighet (min):
+                                                    <input
+                                                        type="number"
+                                                        min={0}
+                                                        value={eff.duration}
+                                                        onChange={(e) => {
+                                                            const effects = [...(step.effects ?? [])];
+                                                            effects[j] = {
+                                                                ...effects[j],
+                                                                duration: +e.target.value,
+                                                            };
+                                                            updateStep(i, { effects });
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                            <div className="field-pair">
+                                                <label>
+                                                    Responsiveness:
+                                                    <input
+                                                        type="number"
+                                                        step={0.01}
+                                                        min={0}
+                                                        max={1}
+                                                        value={eff.responsiveness}
+                                                        onChange={(e) => {
+                                                            const effects = [...(step.effects ?? [])];
+                                                            effects[j] = {
+                                                                ...effects[j],
+                                                                responsiveness: +e.target.value,
+                                                            };
+                                                            updateStep(i, { effects });
+                                                        }}
+                                                    />
+                                                </label>
+                                                <label>
+                                                    Noise:
+                                                    <input
+                                                        type="number"
+                                                        step={0.01}
+                                                        min={0}
+                                                        max={1}
+                                                        value={eff.noise}
+                                                        onChange={(e) => {
+                                                            const effects = [...(step.effects ?? [])];
+                                                            effects[j] = {
+                                                                ...effects[j],
                                                                 noise: +e.target.value,
-                                                            },
-                                                        })
-                                                    }
-                                                />
-                                            </label>
-                                        </div>
-                                        <div className="field-pair">
-                                            <label>
-                                                Offset:
-                                                <input
-                                                    type="number"
-                                                    step={0.01}
-                                                    min={-1}
-                                                    max={1}
-                                                    value={step.effect?.offset ?? DEFAULTS.offset}
-                                                    onChange={(e) =>
-                                                        updateStep(i, {
-                                                            effect: {
-                                                                ...(step.effect ?? {
-                                                                    start: 0,
-                                                                    responsiveness:
-                                                                        DEFAULTS.responsiveness,
-                                                                    noise: DEFAULTS.noise,
-                                                                    alarmMargin:
-                                                                        DEFAULTS.alarmMargin,
-                                                                }),
+                                                            };
+                                                            updateStep(i, { effects });
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                            <div className="field-pair">
+                                                <label>
+                                                    Offset:
+                                                    <input
+                                                        type="number"
+                                                        step={0.01}
+                                                        min={-1}
+                                                        max={1}
+                                                        value={eff.offset}
+                                                        onChange={(e) => {
+                                                            const effects = [...(step.effects ?? [])];
+                                                            effects[j] = {
+                                                                ...effects[j],
                                                                 offset: +e.target.value,
-                                                            },
-                                                        })
-                                                    }
-                                                />
-                                            </label>
-                                            <label>
-                                                Alarm-marginal:
-                                                <input
-                                                    type="number"
-                                                    step={0.01}
-                                                    min={0}
-                                                    max={1}
-                                                    value={step.effect?.alarmMargin ?? DEFAULTS.alarmMargin}
-                                                    onChange={(e) =>
-                                                        updateStep(i, {
-                                                            effect: {
-                                                                ...(step.effect ?? {
-                                                                    start: 0,
-                                                                    responsiveness:
-                                                                        DEFAULTS.responsiveness,
-                                                                    noise: DEFAULTS.noise,
-                                                                    offset:
-                                                                        DEFAULTS.offset,
-                                                                }),
-                                                                alarmMargin:
-                                                                    +e.target.value,
-                                                            },
-                                                        })
-                                                    }
-                                                />
-                                            </label>
+                                                            };
+                                                            updateStep(i, { effects });
+                                                        }}
+                                                    />
+                                                </label>
+                                                <label>
+                                                    Alarm-marginal:
+                                                    <input
+                                                        type="number"
+                                                        step={0.01}
+                                                        min={0}
+                                                        max={1}
+                                                        value={eff.alarmMargin}
+                                                        onChange={(e) => {
+                                                            const effects = [...(step.effects ?? [])];
+                                                            effects[j] = {
+                                                                ...effects[j],
+                                                                alarmMargin: +e.target.value,
+                                                            };
+                                                            updateStep(i, { effects });
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    const effects = [...(step.effects ?? [])];
+                                                    effects.splice(j, 1);
+                                                    updateStep(i, { effects });
+                                                }}
+                                            >
+                                                Ta bort manipulering
+                                            </button>
                                         </div>
-                                    </div>
+                                    ))}
+                                    <button
+                                        onClick={() => {
+                                            const effects = [...(step.effects ?? [])];
+                                            effects.push({
+                                                start: 0,
+                                                duration: 0,
+                                                responsiveness: DEFAULTS.responsiveness,
+                                                noise: DEFAULTS.noise,
+                                                offset: DEFAULTS.offset,
+                                                alarmMargin: DEFAULTS.alarmMargin,
+                                            });
+                                            updateStep(i, { effects });
+                                        }}
+                                    >
+                                        Lägg till manipulering
+                                    </button>
                                 </>
                             )}
                         </>
