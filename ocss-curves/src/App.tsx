@@ -33,9 +33,6 @@ export default function App() {
                 chartWidth={chartWidth}
                 chartHeight={chartHeight}
                 containerRef={containerRef}
-                targetTemp={sim.targetTemp}
-                carbonTarget={sim.carbonTarget}
-                alarmMargin={sim.alarmMargin}
                 alarmEvents={sim.alarmEvents}
             />
 

@@ -3,14 +3,19 @@ import React, {useState, useEffect, useCallback} from "react";
 type AlarmEvent = { time: number; value: number };
 
 type Props = {
-    data: { time: number; carbon: number; temperature: number; carbonAvg: number }[];
+    data: {
+        time: number;
+        carbon: number;
+        temperature: number;
+        carbonAvg: number;
+        targetTemp: number;
+        carbonTarget: number;
+        alarmMargin: number;
+    }[];
     chartWidth: number;
     chartHeight: number;
     containerRef: React.RefObject<HTMLDivElement>;
-    targetTemp: number;
-    carbonTarget: number;
-    alarmMargin: number;
-    alarmEvents: AlarmEvent[]; // new
+    alarmEvents: AlarmEvent[];
 };
 
 export default function Chart({
@@ -18,9 +23,6 @@ export default function Chart({
                                   chartWidth,
                                   chartHeight,
                                   containerRef,
-                                  targetTemp,
-                                  carbonTarget,
-                                  alarmMargin,
                                   alarmEvents,
                               }: Props) {
     const [windowMs, setWindowMs] = useState<number | null>(null);
@@ -101,6 +103,95 @@ export default function Chart({
             )
             .join(" ");
 
+    const buildStepPath = (
+        key: "targetTemp" | "carbonTarget" | "alarmTop" | "alarmBottom",
+        scaleFn: (v: number, h: number, p: number) => number,
+        width: number,
+        height: number,
+        pad: number
+    ) => {
+        if (visibleData.length === 0) return "";
+        const pts: string[] = [];
+        for (let i = 0; i < visibleData.length; i++) {
+            const d = visibleData[i];
+            const x = scaleX(d.time, width, pad);
+            const y = scaleFn(
+                key === "alarmTop"
+                    ? d.carbonTarget + d.alarmMargin
+                    : key === "alarmBottom"
+                        ? d.carbonTarget - d.alarmMargin
+                        : (d[key] as number),
+                height,
+                pad
+            );
+            if (i === 0) {
+                pts.push(`M ${x} ${y}`);
+            } else {
+                const prev = visibleData[i - 1];
+                const prevY = scaleFn(
+                    key === "alarmTop"
+                        ? prev.carbonTarget + prev.alarmMargin
+                        : key === "alarmBottom"
+                            ? prev.carbonTarget - prev.alarmMargin
+                            : (prev[key] as number),
+                    height,
+                    pad
+                );
+                pts.push(`L ${x} ${prevY}`);
+                pts.push(`L ${x} ${y}`);
+            }
+        }
+        return pts.join(" ");
+    };
+
+    const buildAlarmArea = (
+        width: number,
+        height: number,
+        pad: number
+    ) => {
+        if (visibleData.length === 0) return "";
+        const top: [number, number][] = [];
+        const bottom: [number, number][] = [];
+        for (let i = 0; i < visibleData.length; i++) {
+            const d = visibleData[i];
+            const x = scaleX(d.time, width, pad);
+            const topY = scaleCarbonY(
+                d.carbonTarget + d.alarmMargin,
+                height,
+                pad
+            );
+            const bottomY = scaleCarbonY(
+                d.carbonTarget - d.alarmMargin,
+                height,
+                pad
+            );
+            if (i > 0) {
+                const prev = visibleData[i - 1];
+                const prevTop = scaleCarbonY(
+                    prev.carbonTarget + prev.alarmMargin,
+                    height,
+                    pad
+                );
+                const prevBottom = scaleCarbonY(
+                    prev.carbonTarget - prev.alarmMargin,
+                    height,
+                    pad
+                );
+                top.push([x, prevTop]);
+                bottom.unshift([x, prevBottom]);
+            }
+            top.push([x, topY]);
+            bottom.unshift([x, bottomY]);
+        }
+        const commands = [
+            `M ${top[0][0]} ${top[0][1]}`,
+            ...top.slice(1).map(([x, y]) => `L ${x} ${y}`),
+            ...bottom.map(([x, y]) => `L ${x} ${y}`),
+            "Z",
+        ];
+        return commands.join(" ");
+    };
+
     const legendItems = [
         {label: "Temperatur", color: "red"},
         {label: "Kolhalt", color: "green"},
@@ -108,9 +199,6 @@ export default function Chart({
     ];
     const labelFontSize = 32;
     const legendSpacing = labelFontSize + 12;
-
-    const alarmTop = scaleCarbonY(carbonTarget + alarmMargin, chartHeight, padding);
-    const alarmBottom = scaleCarbonY(carbonTarget - alarmMargin, chartHeight, padding);
 
     return (
         <div className="chart-container" ref={containerRef}>
@@ -167,43 +255,62 @@ export default function Chart({
                     ))}
                 </g>
 
-                <rect
-                    x={padding}
-                    width={chartWidth - padding * 2}
-                    y={alarmTop}
-                    height={alarmBottom - alarmTop}
-                    fill="rgba(255, 0, 0, 0.15)"   // red transparent zone
+                {/* Alarm zone */}
+                <path
+                    d={buildAlarmArea(chartWidth, chartHeight, padding)}
+                    fill="rgba(255,0,0,0.15)"
                     stroke="red"
                     strokeWidth={1}
                     strokeDasharray="4,4"
                 />
 
-                <text
-                    x={chartWidth - padding - 150}
-                    y={alarmTop + labelFontSize}
-                    fill="red"
-                    fontSize={labelFontSize}
-                >
-                    Larmzon
-                </text>
-
                 {/* Target lines */}
-                <line
-                    x1={padding}
-                    x2={chartWidth - padding}
-                    y1={scaleTempY(targetTemp, chartHeight, padding)}
-                    y2={scaleTempY(targetTemp, chartHeight, padding)}
+                <path
+                    d={buildStepPath("targetTemp", scaleTempY, chartWidth, chartHeight, padding)}
+                    fill="none"
                     stroke="red"
                     strokeDasharray="4,4"
                 />
-                <line
-                    x1={padding}
-                    x2={chartWidth - padding}
-                    y1={scaleCarbonY(carbonTarget, chartHeight, padding)}
-                    y2={scaleCarbonY(carbonTarget, chartHeight, padding)}
+                <path
+                    d={buildStepPath("carbonTarget", scaleCarbonY, chartWidth, chartHeight, padding)}
+                    fill="none"
                     stroke="green"
                     strokeDasharray="4,4"
                 />
+
+                {/* Alarm margin lines */}
+                <path
+                    d={buildStepPath("alarmTop", scaleCarbonY, chartWidth, chartHeight, padding)}
+                    fill="none"
+                    stroke="red"
+                    strokeDasharray="4,4"
+                />
+                <path
+                    d={buildStepPath("alarmBottom", scaleCarbonY, chartWidth, chartHeight, padding)}
+                    fill="none"
+                    stroke="red"
+                    strokeDasharray="4,4"
+                />
+
+                {/* Alarm label */}
+                {(() => {
+                    const latest = visibleData[visibleData.length - 1];
+                    const y = scaleCarbonY(
+                        latest.carbonTarget + latest.alarmMargin,
+                        chartHeight,
+                        padding
+                    );
+                    return (
+                        <text
+                            x={chartWidth - padding - 150}
+                            y={y + labelFontSize}
+                            fill="red"
+                            fontSize={labelFontSize}
+                        >
+                            Larmzon
+                        </text>
+                    );
+                })()}
 
                 {/* Alarm markers */}
                 {alarmEvents

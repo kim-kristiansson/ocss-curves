@@ -14,7 +14,15 @@ const DEFAULTS = {
 
 export function useSimulation(stepMs: number = 100) {
     const [data, setData] = useState<
-        { time: number; carbon: number; temperature: number; carbonAvg: number }[]
+        {
+            time: number;
+            carbon: number;
+            temperature: number;
+            carbonAvg: number;
+            targetTemp: number;
+            carbonTarget: number;
+            alarmMargin: number;
+        }[]
     >([]);
     const [running, setRunning] = useState(false);
     const [speed, setSpeed] = useState(1);
@@ -91,6 +99,9 @@ export function useSimulation(stepMs: number = 100) {
                     carbon: measuredCarbon,
                     temperature: measuredTemp,
                     carbonAvg: avg,
+                    targetTemp,
+                    carbonTarget,
+                    alarmMargin,
                 };
 
                 setCurrentTemp(measuredTemp);
@@ -104,7 +115,7 @@ export function useSimulation(stepMs: number = 100) {
 
         const interval = setInterval(tick, stepMs / Math.max(1, speed));
         return () => clearInterval(interval);
-    }, [running, speed, carbonTarget, responsiveness, noise, offset, targetTemp, stepMs, avgWindow]);
+    }, [running, speed, carbonTarget, responsiveness, noise, offset, targetTemp, alarmMargin, stepMs, avgWindow]);
 
     // Alarm check
     useEffect(() => {
