@@ -258,8 +258,8 @@ export default function Chart({
                 {/* Alarm zone */}
                 <path
                     d={buildAlarmArea(chartWidth, chartHeight, padding)}
-                    fill="rgba(255,0,0,0.15)"
-                    stroke="red"
+                    fill="rgba(0,255,0,0.15)"
+                    stroke="green"
                     strokeWidth={1}
                     strokeDasharray="4,4"
                 />
@@ -282,13 +282,13 @@ export default function Chart({
                 <path
                     d={buildStepPath("alarmTop", scaleCarbonY, chartWidth, chartHeight, padding)}
                     fill="none"
-                    stroke="red"
+                    stroke="green"
                     strokeDasharray="4,4"
                 />
                 <path
                     d={buildStepPath("alarmBottom", scaleCarbonY, chartWidth, chartHeight, padding)}
                     fill="none"
-                    stroke="red"
+                    stroke="green"
                     strokeDasharray="4,4"
                 />
 
@@ -304,7 +304,7 @@ export default function Chart({
                         <text
                             x={chartWidth - padding - 150}
                             y={y + labelFontSize}
-                            fill="red"
+                            fill="green"
                             fontSize={labelFontSize}
                         >
                             Larmzon
