@@ -12,24 +12,28 @@ export default function App() {
     const sim = useSimulation(860, 100, scenario);
 
     const scenarioPoints = useMemo(() => {
-        let time = 0;
-        let lastTemp = 0;
-        let lastCarbon = 0;
+        const times = new Set<number>();
+        times.add(0);
+        scenario.forEach((s) => {
+            times.add(s.start);
+            times.add(s.start + s.duration);
+        });
+        const sorted = [...times].sort((a, b) => a - b);
         const pts: { time: number; temperature: number; carbon: number }[] = [];
-        scenario.forEach((step) => {
-            if (step.type === "temperature") {
-                lastTemp = step.from;
-            } else if (step.type === "carbon") {
-                lastCarbon = step.from;
-            }
-            pts.push({ time, temperature: lastTemp, carbon: lastCarbon });
-            time += step.duration * 60 * 1000;
-            if (step.type === "temperature") {
-                lastTemp = step.to;
-            } else if (step.type === "carbon") {
-                lastCarbon = step.to;
-            }
-            pts.push({ time, temperature: lastTemp, carbon: lastCarbon });
+        sorted.forEach((t) => {
+            let temp = 0;
+            let carbon = 0;
+            scenario.forEach((s) => {
+                const start = s.start;
+                if (t < start) return;
+                const progress = Math.min(1, (t - start) / Math.max(1, s.duration));
+                if (s.type === "temperature") {
+                    temp = s.from + (s.to - s.from) * progress;
+                } else if (s.type === "carbon") {
+                    carbon = s.from + (s.to - s.from) * progress;
+                }
+            });
+            pts.push({ time: t * 60 * 1000, temperature: temp, carbon });
         });
         return pts;
     }, [scenario]);

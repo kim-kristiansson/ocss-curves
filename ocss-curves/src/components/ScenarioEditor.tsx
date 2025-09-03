@@ -16,7 +16,7 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
     const addStep = () =>
         setScenario([
             ...scenario,
-            { type: "carbon", duration: 10, from: 0, to: 0 } as ScenarioStep,
+            { type: "carbon", start: 0, duration: 10, from: 0, to: 0 } as ScenarioStep,
         ]);
 
     const removeStep = (index: number) =>
@@ -60,7 +60,17 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                         </select>
                     </label>
                     <label>
-                        Tid (min):
+                        Start (min):
+                        <input
+                            type="number"
+                            value={step.start}
+                            onChange={(e) =>
+                                updateStep(i, { start: +e.target.value })
+                            }
+                        />
+                    </label>
+                    <label>
+                        Längd (min):
                         <input
                             type="number"
                             value={step.duration}
