@@ -21,28 +21,31 @@ export default function App() {
     );
 
     const scenarioPoints = useMemo(() => {
-        const times = new Set<number>();
-        times.add(0);
-        scenario.steps.forEach((s) => {
-            times.add(s.start);
-            times.add(s.start + s.duration);
-        });
-        const sorted = [...times].sort((a, b) => a - b);
         const pts: { time: number; temperature: number; carbon: number }[] = [];
-        sorted.forEach((t) => {
-            let temp = scenario.startTemp;
-            let carbon = scenario.startCarbon;
-            scenario.steps.forEach((s) => {
-                const start = s.start;
-                if (t < start) return;
-                const progress = Math.min(1, (t - start) / Math.max(1, s.duration));
-                if (s.type === "temperature") {
-                    temp = s.from + (s.to - s.from) * progress;
-                } else if (s.type === "carbon") {
-                    carbon = s.from + (s.to - s.from) * progress;
-                }
-            });
-            pts.push({ time: t * 60 * 1000, temperature: temp, carbon });
+        let temp = scenario.startTemp;
+        let carbon = scenario.startCarbon;
+        pts.push({ time: 0, temperature: temp, carbon });
+
+        const steps = [...scenario.steps].sort((a, b) => a.start - b.start);
+        steps.forEach((s) => {
+            const startMs = s.start * 60 * 1000;
+            pts.push({ time: startMs, temperature: temp, carbon });
+            if (s.type === "temperature") {
+                const rampEnd = startMs + s.ramp * 60 * 1000;
+                temp = s.target;
+                pts.push({ time: rampEnd, temperature: temp, carbon });
+                const end = rampEnd + s.duration * 60 * 1000;
+                pts.push({ time: end, temperature: temp, carbon });
+            } else if (s.type === "carbon") {
+                const rampEnd = startMs + s.ramp * 60 * 1000;
+                carbon = s.target;
+                pts.push({ time: rampEnd, temperature: temp, carbon });
+                const end = rampEnd + s.duration * 60 * 1000;
+                pts.push({ time: end, temperature: temp, carbon });
+            } else {
+                const end = startMs + s.duration * 60 * 1000;
+                pts.push({ time: end, temperature: temp, carbon });
+            }
         });
         return pts;
     }, [scenario]);

@@ -6,16 +6,16 @@ export type ScenarioStep =
     | {
           type: "temperature";
           start: number; // minutes from simulation start
-          duration: number; // minutes for ramp
-          from: number;
-          to: number;
+          target: number; // desired setpoint
+          ramp: number; // minutes to reach target
+          duration: number; // minutes to hold after ramp
       }
     | {
           type: "carbon";
           start: number;
+          target: number;
+          ramp: number;
           duration: number;
-          from: number;
-          to: number;
       }
     | {
           type: "controls";
@@ -144,24 +144,57 @@ export function useSimulation(
 
                 const steps = scenarioRef.current;
                 if (steps.length > 0) {
+                    let tempBase = initialTemp;
+                    let carbonBase = initialCarbon;
                     steps.forEach((step) => {
                         const startMs = step.start * 60 * 1000;
-                        const endMs = startMs + step.duration * 60 * 1000;
                         if (simTimeRef.current < startMs) return;
-                        const progress = Math.min(
-                            1,
-                            (simTimeRef.current - startMs) /
-                                Math.max(1, endMs - startMs)
-                        );
+
                         if (step.type === "temperature") {
-                            setTemp = step.from + (step.to - step.from) * progress;
+                            const rampMs = step.ramp * 60 * 1000;
+                            const progress = Math.min(
+                                1,
+                                (simTimeRef.current - startMs) /
+                                    Math.max(1, rampMs)
+                            );
+                            setTemp =
+                                tempBase +
+                                (step.target - tempBase) * progress;
+                            if (simTimeRef.current >= startMs + rampMs) {
+                                tempBase = step.target;
+                            } else {
+                                tempBase =
+                                    tempBase +
+                                    (step.target - tempBase) * progress;
+                            }
                             targetTempRef.current = setTemp;
                             setTargetTemp(setTemp);
                         } else if (step.type === "carbon") {
-                            baseCarbon = step.from + (step.to - step.from) * progress;
+                            const rampMs = step.ramp * 60 * 1000;
+                            const progress = Math.min(
+                                1,
+                                (simTimeRef.current - startMs) /
+                                    Math.max(1, rampMs)
+                            );
+                            baseCarbon =
+                                carbonBase +
+                                (step.target - carbonBase) * progress;
+                            if (simTimeRef.current >= startMs + rampMs) {
+                                carbonBase = step.target;
+                            } else {
+                                carbonBase =
+                                    carbonBase +
+                                    (step.target - carbonBase) * progress;
+                            }
                             carbonTargetRef.current = baseCarbon;
                             setCarbonTarget(baseCarbon);
                         } else if (step.type === "controls") {
+                            const endMs = startMs + step.duration * 60 * 1000;
+                            const progress = Math.min(
+                                1,
+                                (simTimeRef.current - startMs) /
+                                    Math.max(1, endMs - startMs)
+                            );
                             const newResp =
                                 step.from.responsiveness +
                                 (step.to.responsiveness - step.from.responsiveness) * progress;
@@ -239,7 +272,7 @@ export function useSimulation(
 
         const interval = setInterval(tick, stepMs / Math.max(1, speed));
         return () => clearInterval(interval);
-    }, [running, speed, stepMs]);
+    }, [running, speed, stepMs, initialTemp, initialCarbon]);
 
     // Alarm check
     useEffect(() => {
