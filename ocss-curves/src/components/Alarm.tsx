@@ -1,14 +1,22 @@
 import React from "react";
 
-export default function Alarm({ alarm, avgCarbon, alarmMargin, onAcknowledge }) {
+export default function Alarm({
+    alarm,
+    avgCarbon,
+    carbonTarget,
+    alarmMargin,
+    avgWindow,
+    onAcknowledge,
+}) {
     if (!alarm) return null;
+
+    const direction = avgCarbon > carbonTarget ? "hög" : "lågt";
 
     return (
         <div className="alarm">
-            🚨 LARM: Kolkurvans 10s-medel ({avgCarbon.toFixed(2)}) utanför bör ± {alarmMargin.toFixed(2)} (Temp inom ±5)
-            <br/>
+            LARM: Kolvärdet är för {direction}
+            <br />
             <button onClick={onAcknowledge}>Kvittera larm</button>
-
 
             <style>{`
         .alarm {

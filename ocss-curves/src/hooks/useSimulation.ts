@@ -8,16 +8,27 @@ const DEFAULTS = {
     noise: 0.05,
     offset: 0,
     alarmMargin: 0.2,
+    avgWindow: 10,
+    targetTemp: 860,
 };
 
-export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
+export function useSimulation(stepMs: number = 100) {
     const [data, setData] = useState<
-        { time: number; carbon: number; temperature: number; carbonAvg: number }[]
+        {
+            time: number;
+            carbon: number;
+            temperature: number;
+            carbonAvg: number;
+            targetTemp: number;
+            carbonTarget: number;
+            alarmMargin: number;
+        }[]
     >([]);
     const [running, setRunning] = useState(false);
     const [speed, setSpeed] = useState(1);
 
     const [carbonTarget, setCarbonTarget] = useState(DEFAULTS.carbonTarget);
+    const [targetTemp, setTargetTemp] = useState(DEFAULTS.targetTemp);
     const [currentTemp, setCurrentTemp] = useState(0);
     const [currentCarbon, setCurrentCarbon] = useState(0);
     const [avgCarbon, setAvgCarbon] = useState(0);
@@ -27,6 +38,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
     const [offset, setOffset] = useState(DEFAULTS.offset);
 
     const [alarmMargin, setAlarmMargin] = useState(DEFAULTS.alarmMargin);
+    const [avgWindow, setAvgWindow] = useState(DEFAULTS.avgWindow);
     const [alarm, setAlarm] = useState(false);
     const [alarmEvents, setAlarmEvents] = useState<AlarmEvent[]>([]);
 
@@ -41,6 +53,8 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
         setNoise(DEFAULTS.noise);
         setOffset(DEFAULTS.offset);
         setAlarmMargin(DEFAULTS.alarmMargin);
+        setAvgWindow(DEFAULTS.avgWindow);
+        setTargetTemp(DEFAULTS.targetTemp);
     };
 
     // Simulation loop (interval speeds up with `speed`)
@@ -73,8 +87,8 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
                 const measuredCarbon = lastCarbon + carbonDrift + noiseStateRef.current;
 
-                // 10s moving average
-                const windowMs = 10 * 1000;
+                // moving average over configurable window
+                const windowMs = avgWindow * 1000;
                 const cutoff = simTimeRef.current - windowMs;
                 const slice = prev.filter((d) => d.time >= cutoff);
                 const avg =
@@ -85,6 +99,9 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
                     carbon: measuredCarbon,
                     temperature: measuredTemp,
                     carbonAvg: avg,
+                    targetTemp,
+                    carbonTarget,
+                    alarmMargin,
                 };
 
                 setCurrentTemp(measuredTemp);
@@ -98,7 +115,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
         const interval = setInterval(tick, stepMs / Math.max(1, speed));
         return () => clearInterval(interval);
-    }, [running, speed, carbonTarget, responsiveness, noise, offset, targetTemp, stepMs]);
+    }, [running, speed, carbonTarget, responsiveness, noise, offset, targetTemp, alarmMargin, stepMs, avgWindow]);
 
     // Alarm check
     useEffect(() => {
@@ -127,6 +144,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
         speed,
         setSpeed,
         targetTemp,
+        setTargetTemp,
         carbonTarget,
         setCarbonTarget,
         currentTemp,
@@ -144,6 +162,8 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
         acknowledgeAlarm,
         setDefaults,
         alarmEvents,
+        avgWindow,
+        setAvgWindow,
         reset: () => {
             setData([]);
             simTimeRef.current = 0;

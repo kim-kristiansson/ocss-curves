@@ -6,7 +6,7 @@ import Sliders from "./components/Sliders";
 import Alarm from "./components/Alarm";
 
 export default function App() {
-    const sim = useSimulation(860);
+    const sim = useSimulation();
 
     const [chartWidth, setChartWidth] = useState(1200);
     const [chartHeight, setChartHeight] = useState(600);
@@ -14,11 +14,10 @@ export default function App() {
 
     useEffect(() => {
         const handleResize = () => {
-            if (containerRef.current) {
-                const w = containerRef.current.clientWidth;
-                setChartWidth(w);
-                setChartHeight(Math.round(w * 0.6));
-            }
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            setChartWidth(w);
+            setChartHeight(Math.round(h * 0.6));
         };
         handleResize();
         window.addEventListener("resize", handleResize);
@@ -29,18 +28,13 @@ export default function App() {
         <div className="app">
             <h2>Simulering</h2>
 
-            <div ref={containerRef}>
-                <Chart
-                    data={sim.data}
-                    chartWidth={chartWidth}
-                    chartHeight={chartHeight}
-                    containerRef={containerRef}
-                    targetTemp={sim.targetTemp}
-                    carbonTarget={sim.carbonTarget}
-                    alarmMargin={sim.alarmMargin}
-                    alarmEvents={sim.alarmEvents}
-                />
-            </div>
+            <Chart
+                data={sim.data}
+                chartWidth={chartWidth}
+                chartHeight={chartHeight}
+                containerRef={containerRef}
+                alarmEvents={sim.alarmEvents}
+            />
 
             <Controls
                 onStart={sim.reset}
@@ -50,14 +44,16 @@ export default function App() {
             />
 
             <div>
-                <p>🌡️ Temperatur – Bör: {sim.targetTemp}°C | Är: {sim.currentTemp.toFixed(1)}°C</p>
+                <p>Temperatur – Bör: {sim.targetTemp}°C | Är: {sim.currentTemp.toFixed(1)}°C</p>
                 <p>
-                    🟢 Kolhalt – Bör: {sim.carbonTarget.toFixed(2)} | Är: {sim.currentCarbon.toFixed(2)} |
-                    Medel (10s): {sim.avgCarbon.toFixed(2)}
+                    Kolhalt – Bör: {sim.carbonTarget.toFixed(2)} | Är: {sim.currentCarbon.toFixed(2)} |
+                    Medelvärde (inom {sim.avgWindow.toFixed(0)}s): {sim.avgCarbon.toFixed(2)}
                 </p>
             </div>
 
             <Sliders
+                targetTemp={sim.targetTemp}
+                setTargetTemp={sim.setTargetTemp}
                 carbonTarget={sim.carbonTarget}
                 setCarbonTarget={sim.setCarbonTarget}
                 responsiveness={sim.responsiveness}
@@ -68,18 +64,27 @@ export default function App() {
                 setOffset={sim.setOffset}
                 alarmMargin={sim.alarmMargin}
                 setAlarmMargin={sim.setAlarmMargin}
+                avgWindow={sim.avgWindow}
+                setAvgWindow={sim.setAvgWindow}
             />
 
-            <Alarm alarm={sim.alarm} avgCarbon={sim.avgCarbon} alarmMargin={sim.alarmMargin} onAcknowledge={sim.acknowledgeAlarm} />
+            <Alarm
+                alarm={sim.alarm}
+                avgCarbon={sim.avgCarbon}
+                carbonTarget={sim.carbonTarget}
+                alarmMargin={sim.alarmMargin}
+                avgWindow={sim.avgWindow}
+                onAcknowledge={sim.acknowledgeAlarm}
+            />
 
             <style>{`
         .app {
           font-family: sans-serif;
-          padding: 10px;
+          padding: 0;
           color: white;
           background: #111;
-          max-width: 100vw;
-          max-height: 100vh;
+          width: 100%;
+          height: 100%;
           overflow: hidden;
           box-sizing: border-box;
           display: flex;

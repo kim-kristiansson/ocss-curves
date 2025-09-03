@@ -9,12 +9,12 @@ export default function Controls({ onStart, onStop, setSpeed, onDefaults }) {
                     onStart();    // starta simuleringen
                 }}
             >
-                Start
+                Starta
             </button>
 
-            <button onClick={onStop}>Stop</button>
+            <button onClick={onStop}>Stoppa</button>
 
-            <button onClick={onDefaults}>Återställ till default</button>
+            <button onClick={onDefaults}>Återställ standardvärden</button>
 
             <div className="speed-controls">
                 <button onClick={() => setSpeed(1)}>x1</button>
