@@ -8,6 +8,7 @@ import ScenarioEditor from "./components/ScenarioEditor";
 
 export default function App() {
     const [scenario, setScenario] = useState<ScenarioStep[]>([]);
+    const [editingScenario, setEditingScenario] = useState(false);
     const sim = useSimulation(860, 100, scenario);
 
     const scenarioPoints = useMemo(() => {
@@ -96,7 +97,14 @@ export default function App() {
                 setAlarmMargin={sim.setAlarmMargin}
             />
 
-            <ScenarioEditor scenario={scenario} setScenario={setScenario} />
+            {editingScenario ? (
+                <div>
+                    <ScenarioEditor scenario={scenario} setScenario={setScenario} />
+                    <button onClick={() => setEditingScenario(false)}>Stäng scenario</button>
+                </div>
+            ) : (
+                <button onClick={() => setEditingScenario(true)}>Skapa scenario</button>
+            )}
 
             <Alarm alarm={sim.alarm} avgCarbon={sim.avgCarbon} alarmMargin={sim.alarmMargin} onAcknowledge={sim.acknowledgeAlarm} />
 
