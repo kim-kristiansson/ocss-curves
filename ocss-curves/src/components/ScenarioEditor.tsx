@@ -1,31 +1,76 @@
-import { type ScenarioStep, DEFAULTS } from "../hooks/useSimulation";
+import { type ScenarioStep, DEFAULTS, type Scenario } from "../hooks/useSimulation";
 
 type Props = {
-    scenario: ScenarioStep[];
-    setScenario: (steps: ScenarioStep[]) => void;
+    scenario: Scenario;
+    setScenario: (s: Scenario) => void;
 };
 
 export default function ScenarioEditor({ scenario, setScenario }: Props) {
     const updateStep = (index: number, changes: Partial<ScenarioStep>) => {
-        const updated = scenario.map((s, i) =>
+        const updated = scenario.steps.map((s, i) =>
             i === index ? { ...s, ...changes } : s
         ) as ScenarioStep[];
-        setScenario(updated);
+        setScenario({ ...scenario, steps: updated });
     };
 
     const addStep = () =>
-        setScenario([
+        setScenario({
             ...scenario,
-            { type: "carbon", start: 0, duration: 10, from: 0, to: 0 } as ScenarioStep,
-        ]);
+            steps: [
+                ...scenario.steps,
+                {
+                    type: "carbon",
+                    start: 0,
+                    duration: 10,
+                    from: scenario.startCarbon,
+                    to: scenario.startCarbon,
+                } as ScenarioStep,
+            ],
+        });
 
     const removeStep = (index: number) =>
-        setScenario(scenario.filter((_, i) => i !== index));
+        setScenario({
+            ...scenario,
+            steps: scenario.steps.filter((_, i) => i !== index),
+        });
 
     return (
         <div className="scenario-editor">
             <h3>Scenario</h3>
-            {scenario.map((step, i) => (
+            <div className="field-pair">
+                <label>
+                    Starttemperatur:
+                    <input
+                        type="number"
+                        min={0}
+                        max={1600}
+                        value={scenario.startTemp}
+                        onChange={(e) =>
+                            setScenario({
+                                ...scenario,
+                                startTemp: +e.target.value,
+                            })
+                        }
+                    />
+                </label>
+                <label>
+                    Startkolhalt:
+                    <input
+                        type="number"
+                        step={0.01}
+                        min={0}
+                        max={1.6}
+                        value={scenario.startCarbon}
+                        onChange={(e) =>
+                            setScenario({
+                                ...scenario,
+                                startCarbon: +e.target.value,
+                            })
+                        }
+                    />
+                </label>
+            </div>
+            {scenario.steps.map((step, i) => (
                 <div key={i} className="scenario-step">
                     <label>
                         Typ:

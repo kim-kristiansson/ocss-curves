@@ -35,6 +35,12 @@ export type ScenarioStep =
           };
       };
 
+export type Scenario = {
+    startTemp: number;
+    startCarbon: number;
+    steps: ScenarioStep[];
+};
+
 export const DEFAULTS = {
     carbonTarget: 1.2,
     responsiveness: 0.1,
@@ -45,6 +51,7 @@ export const DEFAULTS = {
 
 export function useSimulation(
     initialTemp: number = 860,
+    initialCarbon: number = DEFAULTS.carbonTarget,
     stepMs: number = 100,
     scenario: ScenarioStep[] = []
 ) {
@@ -59,12 +66,20 @@ export function useSimulation(
     useEffect(() => {
         targetTempRef.current = targetTemp;
     }, [targetTemp]);
+    useEffect(() => {
+        targetTempRef.current = initialTemp;
+        setTargetTemp(initialTemp);
+    }, [initialTemp]);
 
-    const [carbonTarget, setCarbonTarget] = useState(DEFAULTS.carbonTarget);
+    const [carbonTarget, setCarbonTarget] = useState(initialCarbon);
     const carbonTargetRef = useRef(carbonTarget);
     useEffect(() => {
         carbonTargetRef.current = carbonTarget;
     }, [carbonTarget]);
+    useEffect(() => {
+        carbonTargetRef.current = initialCarbon;
+        setCarbonTarget(initialCarbon);
+    }, [initialCarbon]);
     const [currentTemp, setCurrentTemp] = useState(0);
     const [currentCarbon, setCurrentCarbon] = useState(0);
     const [avgCarbon, setAvgCarbon] = useState(0);
@@ -275,6 +290,10 @@ export function useSimulation(
             setData([]);
             simTimeRef.current = 0;
             noiseStateRef.current = 0;
+            targetTempRef.current = initialTemp;
+            setTargetTemp(initialTemp);
+            carbonTargetRef.current = initialCarbon;
+            setCarbonTarget(initialCarbon);
             setRunning(true);
             setAlarm(false);
             setAlarmEvents([]);

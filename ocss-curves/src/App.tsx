@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useSimulation, type ScenarioStep } from "./hooks/useSimulation";
+import { useSimulation, type Scenario, DEFAULTS } from "./hooks/useSimulation";
 import Chart from "./components/Chart";
 import Controls from "./components/Controls";
 import Sliders from "./components/Sliders";
@@ -7,23 +7,32 @@ import Alarm from "./components/Alarm";
 import ScenarioEditor from "./components/ScenarioEditor";
 
 export default function App() {
-    const [scenario, setScenario] = useState<ScenarioStep[]>([]);
+    const [scenario, setScenario] = useState<Scenario>({
+        startTemp: 0,
+        startCarbon: DEFAULTS.carbonTarget,
+        steps: [],
+    });
     const [editingScenario, setEditingScenario] = useState(false);
-    const sim = useSimulation(860, 100, scenario);
+    const sim = useSimulation(
+        scenario.startTemp,
+        scenario.startCarbon,
+        100,
+        scenario.steps
+    );
 
     const scenarioPoints = useMemo(() => {
         const times = new Set<number>();
         times.add(0);
-        scenario.forEach((s) => {
+        scenario.steps.forEach((s) => {
             times.add(s.start);
             times.add(s.start + s.duration);
         });
         const sorted = [...times].sort((a, b) => a - b);
         const pts: { time: number; temperature: number; carbon: number }[] = [];
         sorted.forEach((t) => {
-            let temp = 0;
-            let carbon = 0;
-            scenario.forEach((s) => {
+            let temp = scenario.startTemp;
+            let carbon = scenario.startCarbon;
+            scenario.steps.forEach((s) => {
                 const start = s.start;
                 if (t < start) return;
                 const progress = Math.min(1, (t - start) / Math.max(1, s.duration));
