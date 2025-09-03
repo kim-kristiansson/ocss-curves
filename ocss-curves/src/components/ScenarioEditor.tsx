@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { type ScenarioStep, DEFAULTS, type Scenario } from "../hooks/useSimulation";
 
 type Props = {
@@ -6,6 +7,8 @@ type Props = {
 };
 
 export default function ScenarioEditor({ scenario, setScenario }: Props) {
+    const [dragIndex, setDragIndex] = useState<number | null>(null);
+
     const updateStep = (index: number, changes: Partial<ScenarioStep>) => {
         const updated = scenario.steps.map((s, i) =>
             i === index ? { ...s, ...changes } : s
@@ -33,8 +36,27 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
             steps: scenario.steps.filter((_, i) => i !== index),
         });
 
+    const handleDragStart = (index: number) => setDragIndex(index);
+
+    const handleDrop = (index: number) => {
+        if (dragIndex === null || dragIndex === index) return;
+        const reordered = [...scenario.steps];
+        const [moved] = reordered.splice(dragIndex, 1);
+        reordered.splice(index, 0, moved);
+        setScenario({ ...scenario, steps: reordered });
+        setDragIndex(null);
+    };
+
+    const allowDrop = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
+
     return (
-        <div className="scenario-editor">
+        <div
+            className="scenario-editor"
+            onDragOver={allowDrop}
+            onDrop={() => {
+                if (dragIndex !== null) handleDrop(scenario.steps.length);
+            }}
+        >
             <h3>Scenario</h3>
             <div className="field-pair">
                 <label>
@@ -70,7 +92,17 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                 </label>
             </div>
             {scenario.steps.map((step, i) => (
-                <div key={i} className="scenario-step">
+                <div
+                    key={i}
+                    className="scenario-step"
+                    draggable
+                    onDragStart={() => handleDragStart(i)}
+                    onDragOver={allowDrop}
+                    onDrop={(e) => {
+                        e.stopPropagation();
+                        handleDrop(i);
+                    }}
+                >
                     <label>
                         Typ:
                         <select
