@@ -195,9 +195,9 @@ export default function Chart({
     const legendItems = [
         {label: "Temperatur", color: "red"},
         {label: "Kolhalt", color: "green"},
-        {label: "Kolhalt (medel)", color: "blue", dash: "5,5"},
+        {label: "Kolhalt (medelvärde)", color: "blue", dash: "5,5"},
     ];
-    const labelFontSize = 32;
+    const labelFontSize = 16;
     const legendSpacing = labelFontSize + 12;
 
     return (

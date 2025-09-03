@@ -10,11 +10,11 @@ export default function Alarm({
 }) {
     if (!alarm) return null;
 
-    const direction = avgCarbon > carbonTarget ? "för hög" : "för låg";
+    const direction = avgCarbon > carbonTarget ? "hög" : "lågt";
 
     return (
         <div className="alarm">
-            🚨 LARM: Kolkurvans {avgWindow.toFixed(0)}s-medel ({avgCarbon.toFixed(2)}) är {direction} (bör {carbonTarget.toFixed(2)} ± {alarmMargin.toFixed(2)}; Temp inom ±5)
+            LARM: Kolvärdet är för {direction}
             <br />
             <button onClick={onAcknowledge}>Kvittera larm</button>
 

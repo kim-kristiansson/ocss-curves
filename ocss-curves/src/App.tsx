@@ -44,10 +44,10 @@ export default function App() {
             />
 
             <div>
-                <p>🌡️ Temperatur – Bör: {sim.targetTemp}°C | Är: {sim.currentTemp.toFixed(1)}°C</p>
+                <p>Temperatur – Bör: {sim.targetTemp}°C | Är: {sim.currentTemp.toFixed(1)}°C</p>
                 <p>
-                    🟢 Kolhalt – Bör: {sim.carbonTarget.toFixed(2)} | Är: {sim.currentCarbon.toFixed(2)} |
-                    Medel ({sim.avgWindow.toFixed(0)}s): {sim.avgCarbon.toFixed(2)}
+                    Kolhalt – Bör: {sim.carbonTarget.toFixed(2)} | Är: {sim.currentCarbon.toFixed(2)} |
+                    Medelvärde (inom {sim.avgWindow.toFixed(0)}s): {sim.avgCarbon.toFixed(2)}
                 </p>
             </div>
 
