@@ -164,8 +164,8 @@ export default function App() {
           color: white;
           background: #111;
           max-width: 100vw;
-          max-height: 100vh;
-          overflow: hidden;
+          min-height: 100vh;
+          overflow-y: auto;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
