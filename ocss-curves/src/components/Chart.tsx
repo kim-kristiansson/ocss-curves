@@ -1,5 +1,8 @@
 import React from "react";
 
+const MAX_TEMP = 1600;
+const MAX_CARBON = 1.6;
+
 type AlarmEvent = { time: number; value: number };
 
 type Props = {
@@ -39,10 +42,13 @@ export default function Chart({
         ((t - minTime) / (maxTime - minTime)) * (width - pad * 2) + pad;
 
     const scaleTempY = (val: number, height: number, pad: number) =>
-        height - ((val - 0) / targetTemp) * (height - pad * 2);
+        height - ((val - 0) / MAX_TEMP) * (height - pad * 2);
 
     const scaleCarbonY = (val: number, height: number, pad: number) =>
-        height - ((val - 0) / 2) * (height - pad * 2);
+        height - ((val - 0) / MAX_CARBON) * (height - pad * 2);
+
+    const tempTicks = Array.from({ length: 5 }, (_, i) => (MAX_TEMP / 4) * i);
+    const carbonTicks = Array.from({ length: 5 }, (_, i) => (MAX_CARBON / 4) * i);
 
     const buildPath = (
         key: "temperature" | "carbon" | "carbonAvg",
@@ -69,6 +75,47 @@ export default function Chart({
                 preserveAspectRatio="xMidYMid meet"
                 style={{width: "100%", height: "100%", display: "block"}}
             >
+                {/* Axes */}
+                <line
+                    x1={padding}
+                    x2={padding}
+                    y1={padding}
+                    y2={chartHeight - padding}
+                    stroke="#555"
+                />
+                <line
+                    x1={chartWidth - padding}
+                    x2={chartWidth - padding}
+                    y1={padding}
+                    y2={chartHeight - padding}
+                    stroke="#555"
+                />
+
+                {tempTicks.map((t) => (
+                    <text
+                        key={`temp-${t}`}
+                        x={padding - 10}
+                        y={scaleTempY(t, chartHeight, padding) + 4}
+                        fontSize={12}
+                        fill="red"
+                        textAnchor="end"
+                    >
+                        {t}
+                    </text>
+                ))}
+
+                {carbonTicks.map((c) => (
+                    <text
+                        key={`carbon-${c}`}
+                        x={chartWidth - padding + 10}
+                        y={scaleCarbonY(c, chartHeight, padding) + 4}
+                        fontSize={12}
+                        fill="green"
+                        textAnchor="start"
+                    >
+                        {c.toFixed(1)}
+                    </text>
+                ))}
                 {/* Temperature */}
                 <path
                     d={buildPath("temperature", scaleTempY, chartWidth, chartHeight, padding)}
