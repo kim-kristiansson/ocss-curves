@@ -16,12 +16,18 @@ export default function App() {
         let lastCarbon = 0;
         const pts: { time: number; temperature: number; carbon: number }[] = [];
         scenario.forEach((step) => {
-            if (step.tempFrom !== undefined) lastTemp = step.tempFrom;
-            if (step.carbonFrom !== undefined) lastCarbon = step.carbonFrom;
+            if (step.type === "temperature") {
+                lastTemp = step.from;
+            } else if (step.type === "carbon") {
+                lastCarbon = step.from;
+            }
             pts.push({ time, temperature: lastTemp, carbon: lastCarbon });
             time += step.duration * 60 * 1000;
-            if (step.tempTo !== undefined) lastTemp = step.tempTo;
-            if (step.carbonTo !== undefined) lastCarbon = step.carbonTo;
+            if (step.type === "temperature") {
+                lastTemp = step.to;
+            } else if (step.type === "carbon") {
+                lastCarbon = step.to;
+            }
             pts.push({ time, temperature: lastTemp, carbon: lastCarbon });
         });
         return pts;
