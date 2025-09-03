@@ -8,6 +8,7 @@ const DEFAULTS = {
     noise: 0.05,
     offset: 0,
     alarmMargin: 0.2,
+    avgWindow: 10,
 };
 
 export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
@@ -27,6 +28,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
     const [offset, setOffset] = useState(DEFAULTS.offset);
 
     const [alarmMargin, setAlarmMargin] = useState(DEFAULTS.alarmMargin);
+    const [avgWindow, setAvgWindow] = useState(DEFAULTS.avgWindow);
     const [alarm, setAlarm] = useState(false);
     const [alarmEvents, setAlarmEvents] = useState<AlarmEvent[]>([]);
 
@@ -41,6 +43,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
         setNoise(DEFAULTS.noise);
         setOffset(DEFAULTS.offset);
         setAlarmMargin(DEFAULTS.alarmMargin);
+        setAvgWindow(DEFAULTS.avgWindow);
     };
 
     // Simulation loop (interval speeds up with `speed`)
@@ -73,8 +76,8 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
                 const measuredCarbon = lastCarbon + carbonDrift + noiseStateRef.current;
 
-                // 10s moving average
-                const windowMs = 10 * 1000;
+                // moving average over configurable window
+                const windowMs = avgWindow * 1000;
                 const cutoff = simTimeRef.current - windowMs;
                 const slice = prev.filter((d) => d.time >= cutoff);
                 const avg =
@@ -98,7 +101,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
         const interval = setInterval(tick, stepMs / Math.max(1, speed));
         return () => clearInterval(interval);
-    }, [running, speed, carbonTarget, responsiveness, noise, offset, targetTemp, stepMs]);
+    }, [running, speed, carbonTarget, responsiveness, noise, offset, targetTemp, stepMs, avgWindow]);
 
     // Alarm check
     useEffect(() => {
@@ -144,6 +147,8 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
         acknowledgeAlarm,
         setDefaults,
         alarmEvents,
+        avgWindow,
+        setAvgWindow,
         reset: () => {
             setData([]);
             simTimeRef.current = 0;

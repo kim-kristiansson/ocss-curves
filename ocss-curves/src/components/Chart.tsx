@@ -134,7 +134,7 @@ export default function Chart({
                     strokeWidth={2}
                 />
 
-                {/* Carbon avg (10s) */}
+                {/* Carbon avg */}
                 <path
                     d={buildPath("carbonAvg", scaleCarbonY, chartWidth, chartHeight, padding)}
                     fill="none"

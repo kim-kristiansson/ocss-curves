@@ -50,7 +50,7 @@ export default function App() {
                 <p>🌡️ Temperatur – Bör: {sim.targetTemp}°C | Är: {sim.currentTemp.toFixed(1)}°C</p>
                 <p>
                     🟢 Kolhalt – Bör: {sim.carbonTarget.toFixed(2)} | Är: {sim.currentCarbon.toFixed(2)} |
-                    Medel (10s): {sim.avgCarbon.toFixed(2)}
+                    Medel ({sim.avgWindow.toFixed(0)}s): {sim.avgCarbon.toFixed(2)}
                 </p>
             </div>
 
@@ -65,9 +65,17 @@ export default function App() {
                 setOffset={sim.setOffset}
                 alarmMargin={sim.alarmMargin}
                 setAlarmMargin={sim.setAlarmMargin}
+                avgWindow={sim.avgWindow}
+                setAvgWindow={sim.setAvgWindow}
             />
 
-            <Alarm alarm={sim.alarm} avgCarbon={sim.avgCarbon} alarmMargin={sim.alarmMargin} onAcknowledge={sim.acknowledgeAlarm} />
+            <Alarm
+                alarm={sim.alarm}
+                avgCarbon={sim.avgCarbon}
+                alarmMargin={sim.alarmMargin}
+                avgWindow={sim.avgWindow}
+                onAcknowledge={sim.acknowledgeAlarm}
+            />
 
             <style>{`
         .app {

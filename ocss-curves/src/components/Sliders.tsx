@@ -11,6 +11,8 @@ export default function Sliders({
                                     setOffset,
                                     alarmMargin,
                                     setAlarmMargin,
+                                    avgWindow,
+                                    setAvgWindow,
                                 }) {
     return (
         <div className="sliders">
@@ -33,6 +35,10 @@ export default function Sliders({
             <label>
                 Larmmarginal: ±{alarmMargin.toFixed(2)}
                 <input type="range" min="0.05" max="0.5" step="0.01" value={alarmMargin} onChange={(e) => setAlarmMargin(+e.target.value)} />
+            </label>
+            <label>
+                Medelperiod: {avgWindow.toFixed(0)}s
+                <input type="range" min="1" max="60" step="1" value={avgWindow} onChange={(e) => setAvgWindow(+e.target.value)} />
             </label>
         </div>
     );
