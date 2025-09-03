@@ -14,11 +14,9 @@ export default function App() {
 
     useEffect(() => {
         const handleResize = () => {
-            if (containerRef.current) {
-                const w = containerRef.current.clientWidth;
-                setChartWidth(w);
-                setChartHeight(Math.round(w * 0.6));
-            }
+            const w = window.innerWidth;
+            setChartWidth(w);
+            setChartHeight(Math.round(w * 0.6));
         };
         handleResize();
         window.addEventListener("resize", handleResize);
@@ -29,18 +27,16 @@ export default function App() {
         <div className="app">
             <h2>Simulering</h2>
 
-            <div ref={containerRef}>
-                <Chart
-                    data={sim.data}
-                    chartWidth={chartWidth}
-                    chartHeight={chartHeight}
-                    containerRef={containerRef}
-                    targetTemp={sim.targetTemp}
-                    carbonTarget={sim.carbonTarget}
-                    alarmMargin={sim.alarmMargin}
-                    alarmEvents={sim.alarmEvents}
-                />
-            </div>
+            <Chart
+                data={sim.data}
+                chartWidth={chartWidth}
+                chartHeight={chartHeight}
+                containerRef={containerRef}
+                targetTemp={sim.targetTemp}
+                carbonTarget={sim.carbonTarget}
+                alarmMargin={sim.alarmMargin}
+                alarmEvents={sim.alarmEvents}
+            />
 
             <Controls
                 onStart={sim.reset}
@@ -75,11 +71,11 @@ export default function App() {
             <style>{`
         .app {
           font-family: sans-serif;
-          padding: 10px;
+          padding: 0;
           color: white;
           background: #111;
-          max-width: 100vw;
-          max-height: 100vh;
+          width: 100vw;
+          height: 100vh;
           overflow: hidden;
           box-sizing: border-box;
           display: flex;

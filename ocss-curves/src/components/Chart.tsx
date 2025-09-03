@@ -105,8 +105,8 @@ export default function Chart({
         {label: "Kolhalt", color: "green"},
         {label: "Kolhalt (medel)", color: "blue", dash: "5,5"},
     ];
-    const labelFontSize = 16;
-    const legendSpacing = labelFontSize + 8;
+    const labelFontSize = 32;
+    const legendSpacing = labelFontSize + 12;
 
     const alarmTop = scaleCarbonY(carbonTarget + alarmMargin, chartHeight, padding);
     const alarmBottom = scaleCarbonY(carbonTarget - alarmMargin, chartHeight, padding);
@@ -178,7 +178,7 @@ export default function Chart({
                 />
 
                 <text
-                    x={chartWidth - padding - 80}
+                    x={chartWidth - padding - 150}
                     y={alarmTop + labelFontSize}
                     fill="red"
                     fontSize={labelFontSize}
@@ -222,10 +222,8 @@ export default function Chart({
 
             <style>{`
         .chart-container {
-          width: 100%;
+          width: 100vw;
           height: 60vh;
-          max-width: 100vw;
-          max-height: 100vh;
           background: #222;
           border: 1px solid #444;
           border-radius: 5px;
