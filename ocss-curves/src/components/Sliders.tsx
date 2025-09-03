@@ -1,4 +1,15 @@
-import React from "react";
+type Props = {
+    carbonTarget: number;
+    setCarbonTarget: (v: number) => void;
+    responsiveness: number;
+    setResponsiveness: (v: number) => void;
+    noise: number;
+    setNoise: (v: number) => void;
+    offset: number;
+    setOffset: (v: number) => void;
+    alarmMargin: number;
+    setAlarmMargin: (v: number) => void;
+};
 
 export default function Sliders({
                                     carbonTarget,
@@ -11,7 +22,7 @@ export default function Sliders({
                                     setOffset,
                                     alarmMargin,
                                     setAlarmMargin,
-                                }) {
+                                }: Props) {
     return (
         <div className="sliders">
             <label>

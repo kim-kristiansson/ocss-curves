@@ -1,12 +1,33 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useSimulation } from "./hooks/useSimulation";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useSimulation, type ScenarioStep } from "./hooks/useSimulation";
 import Chart from "./components/Chart";
 import Controls from "./components/Controls";
 import Sliders from "./components/Sliders";
 import Alarm from "./components/Alarm";
+import ScenarioEditor from "./components/ScenarioEditor";
 
 export default function App() {
-    const sim = useSimulation(860);
+    const [scenario, setScenario] = useState<ScenarioStep[]>([]);
+    const sim = useSimulation(860, 100, scenario);
+
+    const scenarioPoints = useMemo(() => {
+        let time = 0;
+        const pts: { time: number; temperature: number; carbon: number }[] = [];
+        scenario.forEach((step) => {
+            pts.push({
+                time,
+                temperature: step.tempFrom,
+                carbon: step.carbonFrom,
+            });
+            time += step.duration * 60 * 1000;
+            pts.push({
+                time,
+                temperature: step.tempTo,
+                carbon: step.carbonTo,
+            });
+        });
+        return pts;
+    }, [scenario]);
 
     const [chartWidth, setChartWidth] = useState(1200);
     const [chartHeight, setChartHeight] = useState(600);
@@ -32,6 +53,7 @@ export default function App() {
             <div ref={containerRef}>
                 <Chart
                     data={sim.data}
+                    scenario={scenarioPoints}
                     chartWidth={chartWidth}
                     chartHeight={chartHeight}
                     containerRef={containerRef}
@@ -69,6 +91,8 @@ export default function App() {
                 alarmMargin={sim.alarmMargin}
                 setAlarmMargin={sim.setAlarmMargin}
             />
+
+            <ScenarioEditor scenario={scenario} setScenario={setScenario} />
 
             <Alarm alarm={sim.alarm} avgCarbon={sim.avgCarbon} alarmMargin={sim.alarmMargin} onAcknowledge={sim.acknowledgeAlarm} />
 

@@ -2,6 +2,14 @@ import { useState, useRef, useEffect } from "react";
 
 export type AlarmEvent = { time: number; value: number };
 
+export type ScenarioStep = {
+    duration: number; // minutes
+    tempFrom: number;
+    tempTo: number;
+    carbonFrom: number;
+    carbonTo: number;
+};
+
 const DEFAULTS = {
     carbonTarget: 1.2,
     responsiveness: 0.1,
@@ -10,14 +18,28 @@ const DEFAULTS = {
     alarmMargin: 0.2,
 };
 
-export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
+export function useSimulation(
+    initialTemp: number = 860,
+    stepMs: number = 100,
+    scenario: ScenarioStep[] = []
+) {
     const [data, setData] = useState<
         { time: number; carbon: number; temperature: number; carbonAvg: number }[]
     >([]);
     const [running, setRunning] = useState(false);
     const [speed, setSpeed] = useState(1);
 
+    const [targetTemp, setTargetTemp] = useState(initialTemp);
+    const targetTempRef = useRef(targetTemp);
+    useEffect(() => {
+        targetTempRef.current = targetTemp;
+    }, [targetTemp]);
+
     const [carbonTarget, setCarbonTarget] = useState(DEFAULTS.carbonTarget);
+    const carbonTargetRef = useRef(carbonTarget);
+    useEffect(() => {
+        carbonTargetRef.current = carbonTarget;
+    }, [carbonTarget]);
     const [currentTemp, setCurrentTemp] = useState(0);
     const [currentCarbon, setCurrentCarbon] = useState(0);
     const [avgCarbon, setAvgCarbon] = useState(0);
@@ -32,6 +54,15 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
     const simTimeRef = useRef(0);
     const noiseStateRef = useRef(0);
+    const scenarioRef = useRef<ScenarioStep[]>(scenario);
+    const scenarioIndexRef = useRef(0);
+    const scenarioElapsedRef = useRef(0);
+
+    useEffect(() => {
+        scenarioRef.current = scenario;
+        scenarioIndexRef.current = 0;
+        scenarioElapsedRef.current = 0;
+    }, [scenario]);
 
     const acknowledgeAlarm = () => setAlarm(false);
 
@@ -54,11 +85,45 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
                 simTimeRef.current += stepMs;
 
-                const rampTime = 60 * 1000;
-                const progress = Math.min(1, simTimeRef.current / rampTime);
+                let setTemp = targetTempRef.current;
+                let setCarbon = carbonTargetRef.current + offset;
 
-                const setTemp = progress * targetTemp;
-                const setCarbon = progress * carbonTarget + offset;
+                const steps = scenarioRef.current;
+                if (steps.length > 0) {
+                    const step = steps[scenarioIndexRef.current];
+                    const durationMs = step.duration * 60 * 1000;
+                    const progress = Math.min(
+                        1,
+                        scenarioElapsedRef.current / durationMs
+                    );
+                    setTemp =
+                        step.tempFrom +
+                        (step.tempTo - step.tempFrom) * progress;
+                    setCarbon =
+                        step.carbonFrom +
+                        (step.carbonTo - step.carbonFrom) * progress +
+                        offset;
+                    scenarioElapsedRef.current += stepMs;
+                    if (
+                        progress >= 1 &&
+                        scenarioIndexRef.current < steps.length - 1
+                    ) {
+                        scenarioIndexRef.current++;
+                        scenarioElapsedRef.current = 0;
+                    }
+                    targetTempRef.current = setTemp;
+                    carbonTargetRef.current = setCarbon - offset;
+                    setTargetTemp(setTemp);
+                    setCarbonTarget(setCarbon - offset);
+                } else {
+                    const rampTime = 60 * 1000;
+                    const progress = Math.min(
+                        1,
+                        simTimeRef.current / rampTime
+                    );
+                    setTemp = progress * targetTempRef.current;
+                    setCarbon = progress * carbonTargetRef.current + offset;
+                }
 
                 // Temperature (gentle approach to setpoint)
                 let measuredTemp = lastTemp + (setTemp - lastTemp) * (stepMs / 5000);
@@ -69,9 +134,11 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
                 const carbonDrift = (setCarbon - lastCarbon) * drift;
 
                 const randomShock = (Math.random() * 2 - 1) * noise;
-                noiseStateRef.current = noiseStateRef.current * 0.9 + randomShock * 0.1;
+                noiseStateRef.current =
+                    noiseStateRef.current * 0.9 + randomShock * 0.1;
 
-                const measuredCarbon = lastCarbon + carbonDrift + noiseStateRef.current;
+                const measuredCarbon =
+                    lastCarbon + carbonDrift + noiseStateRef.current;
 
                 // 10s moving average
                 const windowMs = 10 * 1000;
@@ -98,7 +165,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
 
         const interval = setInterval(tick, stepMs / Math.max(1, speed));
         return () => clearInterval(interval);
-    }, [running, speed, carbonTarget, responsiveness, noise, offset, targetTemp, stepMs]);
+    }, [running, speed, responsiveness, noise, offset, stepMs]);
 
     // Alarm check
     useEffect(() => {
@@ -127,6 +194,7 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
         speed,
         setSpeed,
         targetTemp,
+        setTargetTemp,
         carbonTarget,
         setCarbonTarget,
         currentTemp,
@@ -148,6 +216,8 @@ export function useSimulation(targetTemp: number = 860, stepMs: number = 100) {
             setData([]);
             simTimeRef.current = 0;
             noiseStateRef.current = 0;
+            scenarioIndexRef.current = 0;
+            scenarioElapsedRef.current = 0;
             setRunning(true);
             setAlarm(false);
             setAlarmEvents([]);
