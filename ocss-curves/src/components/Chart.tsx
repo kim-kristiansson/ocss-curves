@@ -76,8 +76,9 @@ export default function Chart({
     const scaleX = (t: number, width: number, pad: number) =>
         ((t - minTime) / (maxTime - minTime)) * (width - pad * 2) + pad;
 
+    const TEMP_MAX = 1000;
     const scaleTempY = (val: number, height: number, pad: number) =>
-        height - ((val - 0) / Math.max(1, targetTemp)) * (height - pad * 2);
+        height - (val / TEMP_MAX) * (height - pad * 2);
 
     const scaleCarbonY = (val: number, height: number, pad: number) =>
         height - ((val - 0) / 2) * (height - pad * 2);
