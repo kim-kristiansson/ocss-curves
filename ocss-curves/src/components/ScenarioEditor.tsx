@@ -109,35 +109,17 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                             value={step.type}
                             onChange={(e) => {
                                 const type = e.target.value as ScenarioStep["type"];
-                                if (type === "controls") {
-                                    updateStep(i, {
-                                        type,
-                                        from: {
-                                            responsiveness: DEFAULTS.responsiveness,
-                                            noise: DEFAULTS.noise,
-                                            offset: DEFAULTS.offset,
-                                            alarmMargin: DEFAULTS.alarmMargin,
-                                        },
-                                        to: {
-                                            responsiveness: DEFAULTS.responsiveness,
-                                            noise: DEFAULTS.noise,
-                                            offset: DEFAULTS.offset,
-                                            alarmMargin: DEFAULTS.alarmMargin,
-                                        },
-                                    } as ScenarioStep);
-                                } else {
-                                    updateStep(i, {
-                                        type,
-                                        target: 0,
-                                        ramp: 0,
-                                        duration: 0,
-                                    } as ScenarioStep);
-                                }
+                                updateStep(i, {
+                                    type,
+                                    target: 0,
+                                    ramp: 0,
+                                    duration: 0,
+                                    effect: undefined,
+                                } as ScenarioStep);
                             }}
                         >
                             <option value="carbon">Kolhalt</option>
                             <option value="temperature">Temperatur</option>
-                            <option value="controls">Manipulering</option>
                         </select>
                     </label>
                     {(step.type === "carbon" || step.type === "temperature") && (
@@ -175,162 +157,144 @@ export default function ScenarioEditor({ scenario, setScenario }: Props) {
                                     }
                                 />
                             </label>
-                        </>
-                    )}
-                    {step.type === "controls" && (
-                        <>
-                            <label>
-                                Varaktighet (min):
-                                <input
-                                    type="number"
-                                    value={step.duration}
-                                    onChange={(e) =>
-                                        updateStep(i, { duration: +e.target.value })
-                                    }
-                                />
-                            </label>
-                            <div className="controls-fields">
-                                <div className="field-pair">
+                            {step.type === "carbon" && (
+                                <>
                                     <label>
-                                        Responsiveness från:
+                                        Manipulering från (min):
                                         <input
                                             type="number"
-                                            step={0.01}
                                             min={0}
-                                            max={1}
-                                            value={step.from.responsiveness}
+                                            max={step.ramp + step.duration}
+                                            value={step.effect?.start ?? 0}
                                             onChange={(e) =>
                                                 updateStep(i, {
-                                                    from: {
-                                                        ...step.from,
-                                                        responsiveness: +e.target.value,
+                                                    effect: {
+                                                        ...(step.effect ?? {
+                                                            responsiveness:
+                                                                DEFAULTS.responsiveness,
+                                                            noise: DEFAULTS.noise,
+                                                            offset: DEFAULTS.offset,
+                                                            alarmMargin:
+                                                                DEFAULTS.alarmMargin,
+                                                        }),
+                                                        start: +e.target.value,
                                                     },
                                                 })
                                             }
                                         />
                                     </label>
-                                    <label>
-                                        till:
-                                        <input
-                                            type="number"
-                                            step={0.01}
-                                            min={0}
-                                            max={1}
-                                            value={step.to.responsiveness}
-                                            onChange={(e) =>
-                                                updateStep(i, {
-                                                    to: {
-                                                        ...step.to,
-                                                        responsiveness: +e.target.value,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                    </label>
-                                </div>
-                                <div className="field-pair">
-                                    <label>
-                                        Noise från:
-                                        <input
-                                            type="number"
-                                            step={0.01}
-                                            min={0}
-                                            max={1}
-                                            value={step.from.noise}
-                                            onChange={(e) =>
-                                                updateStep(i, {
-                                                    from: { ...step.from, noise: +e.target.value },
-                                                })
-                                            }
-                                        />
-                                    </label>
-                                    <label>
-                                        till:
-                                        <input
-                                            type="number"
-                                            step={0.01}
-                                            min={0}
-                                            max={1}
-                                            value={step.to.noise}
-                                            onChange={(e) =>
-                                                updateStep(i, {
-                                                    to: { ...step.to, noise: +e.target.value },
-                                                })
-                                            }
-                                        />
-                                    </label>
-                                </div>
-                                <div className="field-pair">
-                                    <label>
-                                        Offset från:
-                                        <input
-                                            type="number"
-                                            step={0.01}
-                                            min={-1}
-                                            max={1}
-                                            value={step.from.offset}
-                                            onChange={(e) =>
-                                                updateStep(i, {
-                                                    from: { ...step.from, offset: +e.target.value },
-                                                })
-                                            }
-                                        />
-                                    </label>
-                                    <label>
-                                        till:
-                                        <input
-                                            type="number"
-                                            step={0.01}
-                                            min={-1}
-                                            max={1}
-                                            value={step.to.offset}
-                                            onChange={(e) =>
-                                                updateStep(i, {
-                                                    to: { ...step.to, offset: +e.target.value },
-                                                })
-                                            }
-                                        />
-                                    </label>
-                                </div>
-                                <div className="field-pair">
-                                    <label>
-                                        Alarm-marginal från:
-                                        <input
-                                            type="number"
-                                            step={0.01}
-                                            min={0}
-                                            max={1}
-                                            value={step.from.alarmMargin}
-                                            onChange={(e) =>
-                                                updateStep(i, {
-                                                    from: {
-                                                        ...step.from,
-                                                        alarmMargin: +e.target.value,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                    </label>
-                                    <label>
-                                        till:
-                                        <input
-                                            type="number"
-                                            step={0.01}
-                                            min={0}
-                                            max={1}
-                                            value={step.to.alarmMargin}
-                                            onChange={(e) =>
-                                                updateStep(i, {
-                                                    to: {
-                                                        ...step.to,
-                                                        alarmMargin: +e.target.value,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                    </label>
-                                </div>
-                            </div>
+                                    <div className="controls-fields">
+                                        <div className="field-pair">
+                                            <label>
+                                                Responsiveness:
+                                                <input
+                                                    type="number"
+                                                    step={0.01}
+                                                    min={0}
+                                                    max={1}
+                                                    value={step.effect?.responsiveness ?? DEFAULTS.responsiveness}
+                                                    onChange={(e) =>
+                                                        updateStep(i, {
+                                                            effect: {
+                                                                ...(step.effect ?? {
+                                                                    start: 0,
+                                                                    noise:
+                                                                        DEFAULTS.noise,
+                                                                    offset:
+                                                                        DEFAULTS.offset,
+                                                                    alarmMargin:
+                                                                        DEFAULTS.alarmMargin,
+                                                                }),
+                                                                responsiveness:
+                                                                    +e.target.value,
+                                                            },
+                                                        })
+                                                    }
+                                                />
+                                            </label>
+                                            <label>
+                                                Noise:
+                                                <input
+                                                    type="number"
+                                                    step={0.01}
+                                                    min={0}
+                                                    max={1}
+                                                    value={step.effect?.noise ?? DEFAULTS.noise}
+                                                    onChange={(e) =>
+                                                        updateStep(i, {
+                                                            effect: {
+                                                                ...(step.effect ?? {
+                                                                    start: 0,
+                                                                    responsiveness:
+                                                                        DEFAULTS.responsiveness,
+                                                                    offset:
+                                                                        DEFAULTS.offset,
+                                                                    alarmMargin:
+                                                                        DEFAULTS.alarmMargin,
+                                                                }),
+                                                                noise: +e.target.value,
+                                                            },
+                                                        })
+                                                    }
+                                                />
+                                            </label>
+                                        </div>
+                                        <div className="field-pair">
+                                            <label>
+                                                Offset:
+                                                <input
+                                                    type="number"
+                                                    step={0.01}
+                                                    min={-1}
+                                                    max={1}
+                                                    value={step.effect?.offset ?? DEFAULTS.offset}
+                                                    onChange={(e) =>
+                                                        updateStep(i, {
+                                                            effect: {
+                                                                ...(step.effect ?? {
+                                                                    start: 0,
+                                                                    responsiveness:
+                                                                        DEFAULTS.responsiveness,
+                                                                    noise: DEFAULTS.noise,
+                                                                    alarmMargin:
+                                                                        DEFAULTS.alarmMargin,
+                                                                }),
+                                                                offset: +e.target.value,
+                                                            },
+                                                        })
+                                                    }
+                                                />
+                                            </label>
+                                            <label>
+                                                Alarm-marginal:
+                                                <input
+                                                    type="number"
+                                                    step={0.01}
+                                                    min={0}
+                                                    max={1}
+                                                    value={step.effect?.alarmMargin ?? DEFAULTS.alarmMargin}
+                                                    onChange={(e) =>
+                                                        updateStep(i, {
+                                                            effect: {
+                                                                ...(step.effect ?? {
+                                                                    start: 0,
+                                                                    responsiveness:
+                                                                        DEFAULTS.responsiveness,
+                                                                    noise: DEFAULTS.noise,
+                                                                    offset:
+                                                                        DEFAULTS.offset,
+                                                                }),
+                                                                alarmMargin:
+                                                                    +e.target.value,
+                                                            },
+                                                        })
+                                                    }
+                                                />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
                     <button onClick={() => removeStep(i)}>Ta bort</button>

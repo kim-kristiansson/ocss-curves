@@ -14,17 +14,8 @@ export type ScenarioStep =
           target: number;
           ramp: number;
           duration: number;
-      }
-    | {
-          type: "controls";
-          duration: number;
-          from: {
-              responsiveness: number;
-              noise: number;
-              offset: number;
-              alarmMargin: number;
-          };
-          to: {
+          effect?: {
+              start: number; // minutes from step start
               responsiveness: number;
               noise: number;
               offset: number;
@@ -109,19 +100,15 @@ export function useSimulation(
     const noiseStateRef = useRef(0);
     type TempStep = Extract<ScenarioStep, { type: "temperature" }> & { start: number };
     type CarbonStep = Extract<ScenarioStep, { type: "carbon" }> & { start: number };
-    type ControlStep = Extract<ScenarioStep, { type: "controls" }> & { start: number };
 
     const tempStepsRef = useRef<TempStep[]>([]);
     const carbonStepsRef = useRef<CarbonStep[]>([]);
-    const controlStepsRef = useRef<ControlStep[]>([]);
 
     useEffect(() => {
         let tempT = 0;
         let carbonT = 0;
-        let controlT = 0;
         const temps: TempStep[] = [];
         const carbons: CarbonStep[] = [];
-        const controls: ControlStep[] = [];
 
         scenario.forEach((s) => {
             if (s.type === "temperature") {
@@ -130,15 +117,11 @@ export function useSimulation(
             } else if (s.type === "carbon") {
                 carbons.push({ ...s, start: carbonT });
                 carbonT += s.ramp + s.duration;
-            } else {
-                controls.push({ ...s, start: controlT });
-                controlT += s.duration;
             }
         });
 
         tempStepsRef.current = temps;
         carbonStepsRef.current = carbons;
-        controlStepsRef.current = controls;
     }, [scenario]);
 
     const acknowledgeAlarm = () => setAlarm(false);
@@ -171,8 +154,7 @@ export function useSimulation(
 
                 if (
                     tempStepsRef.current.length > 0 ||
-                    carbonStepsRef.current.length > 0 ||
-                    controlStepsRef.current.length > 0
+                    carbonStepsRef.current.length > 0
                 ) {
                     let tempBase = initialTemp;
                     tempStepsRef.current.forEach((step) => {
@@ -200,8 +182,10 @@ export function useSimulation(
                     let carbonBase = initialCarbon;
                     carbonStepsRef.current.forEach((step) => {
                         const startMs = step.start * 60 * 1000;
-                        if (simTimeRef.current < startMs) return;
                         const rampMs = step.ramp * 60 * 1000;
+                        const endMs =
+                            startMs + (step.ramp + step.duration) * 60 * 1000;
+                        if (simTimeRef.current < startMs) return;
                         const progress = Math.min(
                             1,
                             (simTimeRef.current - startMs) /
@@ -216,34 +200,24 @@ export function useSimulation(
                                 carbonBase +
                                 (step.target - carbonBase) * progress;
                         }
+
+                        if (step.effect) {
+                            const effectMs =
+                                startMs + step.effect.start * 60 * 1000;
+                            if (
+                                simTimeRef.current >= effectMs &&
+                                simTimeRef.current <= endMs
+                            ) {
+                                respVal = step.effect.responsiveness;
+                                noiseVal = step.effect.noise;
+                                offsetVal = step.effect.offset;
+                                marginVal = step.effect.alarmMargin;
+                            }
+                        }
                     });
                     carbonTargetRef.current = baseCarbon;
                     setCarbonTarget(baseCarbon);
 
-                    controlStepsRef.current.forEach((step) => {
-                        const startMs = step.start * 60 * 1000;
-                        if (simTimeRef.current < startMs) return;
-                        const endMs = startMs + step.duration * 60 * 1000;
-                        const progress = Math.min(
-                            1,
-                            (simTimeRef.current - startMs) /
-                                Math.max(1, endMs - startMs)
-                        );
-                        respVal =
-                            step.from.responsiveness +
-                            (step.to.responsiveness - step.from.responsiveness) *
-                                progress;
-                        noiseVal =
-                            step.from.noise +
-                            (step.to.noise - step.from.noise) * progress;
-                        offsetVal =
-                            step.from.offset +
-                            (step.to.offset - step.from.offset) * progress;
-                        marginVal =
-                            step.from.alarmMargin +
-                            (step.to.alarmMargin - step.from.alarmMargin) *
-                                progress;
-                    });
                     responsivenessRef.current = respVal;
                     setResponsiveness(respVal);
                     noiseRef.current = noiseVal;
