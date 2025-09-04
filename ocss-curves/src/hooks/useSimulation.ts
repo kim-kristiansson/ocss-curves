@@ -75,15 +75,17 @@ export function useSimulation(
     const [currentCarbon, setCurrentCarbon] = useState(0);
     const [avgCarbon, setAvgCarbon] = useState(0);
 
-    const [responsiveness, setResponsiveness] = useState(DEFAULTS.responsiveness);
+    const [responsiveness, setResponsiveness] = useState(
+        DEFAULTS.responsiveness
+    );
     const [noise, setNoise] = useState(DEFAULTS.noise);
     const [offset, setOffset] = useState(DEFAULTS.offset);
+    const [alarmMargin, setAlarmMargin] = useState(DEFAULTS.alarmMargin);
+
     const offsetRef = useRef(offset);
     useEffect(() => {
         offsetRef.current = offset;
     }, [offset]);
-
-    const [alarmMargin, setAlarmMargin] = useState(DEFAULTS.alarmMargin);
     const responsivenessRef = useRef(responsiveness);
     useEffect(() => {
         responsivenessRef.current = responsiveness;
@@ -150,10 +152,10 @@ export function useSimulation(
                 let setTemp = targetTempRef.current;
                 let baseCarbon = carbonTargetRef.current;
                 let setCarbon = baseCarbon;
-                let respVal = responsivenessRef.current;
-                let noiseVal = noiseRef.current;
-                let marginVal = alarmMarginRef.current;
-                let offsetVal = offsetRef.current;
+                let respVal = responsiveness;
+                let noiseVal = noise;
+                let marginVal = alarmMargin;
+                let offsetVal = offset;
 
                 if (
                     tempStepsRef.current.length > 0 ||
@@ -236,14 +238,10 @@ export function useSimulation(
                     setCarbonTarget(baseCarbon);
                 }
 
-                setOffset(offsetVal);
-
+                offsetRef.current = offsetVal;
                 responsivenessRef.current = respVal;
-                setResponsiveness(respVal);
                 noiseRef.current = noiseVal;
-                setNoise(noiseVal);
                 alarmMarginRef.current = marginVal;
-                setAlarmMargin(marginVal);
 
                 // Temperature (gentle approach to setpoint)
                 let measuredTemp = lastTemp + (setTemp - lastTemp) * (stepMs / 5000);
@@ -255,7 +253,7 @@ export function useSimulation(
                 const carbonDrift =
                     (carbonTargetRef.current - lastCarbon) * drift;
 
-                const randomShock = (Math.random() * 2 - 1) * noiseRef.current;
+                const randomShock = (Math.random() * 2 - 1) * noiseVal;
 
                 const measuredCarbon =
                     lastCarbon + carbonDrift + randomShock;
