@@ -50,8 +50,29 @@ export default function App() {
                 const rampEnd = start + s.ramp * 60 * 1000;
                 carbon = s.target;
                 carbonEvents.push({ time: rampEnd, carbon });
+
                 const end = rampEnd + s.duration * 60 * 1000;
-                carbonEvents.push({ time: end, carbon });
+
+                if (s.effects && s.effects.length > 0) {
+                    const sorted = [...s.effects].sort(
+                        (a, b) => a.start - b.start
+                    );
+                    let currentOffset = 0;
+                    sorted.forEach((eff) => {
+                        const effStart = start + eff.start * 60 * 1000;
+                        const effEnd = effStart + eff.duration * 60 * 1000;
+                        carbonEvents.push({ time: effStart, carbon: carbon + currentOffset });
+                        currentOffset = eff.offset;
+                        carbonEvents.push({ time: effStart, carbon: carbon + currentOffset });
+                        carbonEvents.push({ time: effEnd, carbon: carbon + currentOffset });
+                        currentOffset = 0;
+                        carbonEvents.push({ time: effEnd, carbon: carbon });
+                    });
+                    carbonEvents.push({ time: end, carbon });
+                } else {
+                    carbonEvents.push({ time: end, carbon });
+                }
+
                 carbonTime += s.ramp + s.duration;
             }
         });
