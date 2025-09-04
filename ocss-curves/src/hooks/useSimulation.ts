@@ -341,3 +341,86 @@ export function useSimulation(
         },
     };
 }
+
+export function simulateScenario(
+    startTemp: number,
+    startCarbon: number,
+    steps: ScenarioStep[],
+    stepMs = 1000
+) {
+    type TempStep = Extract<ScenarioStep, { type: "temperature" }> & {
+        start: number;
+    };
+    type CarbonStep = Extract<ScenarioStep, { type: "carbon" }> & {
+        start: number;
+    };
+
+    let tempT = 0;
+    let carbonT = 0;
+    const tempSteps: TempStep[] = [];
+    const carbonSteps: CarbonStep[] = [];
+    steps.forEach((s) => {
+        if (s.type === "temperature") {
+            tempSteps.push({ ...s, start: tempT });
+            tempT += s.ramp + s.duration;
+        } else if (s.type === "carbon") {
+            carbonSteps.push({ ...s, start: carbonT });
+            carbonT += s.ramp + s.duration;
+        }
+    });
+
+    const lastTemp = tempSteps[tempSteps.length - 1];
+    const lastCarbon = carbonSteps[carbonSteps.length - 1];
+    const totalMinutes = Math.max(
+        lastTemp ? lastTemp.start + lastTemp.ramp + lastTemp.duration : 0,
+        lastCarbon ? lastCarbon.start + lastCarbon.ramp + lastCarbon.duration : 0
+    );
+    const totalMs = totalMinutes * 60 * 1000;
+
+    const pts: { time: number; temperature: number; carbon: number }[] = [];
+    for (let t = 0; t <= totalMs; t += stepMs) {
+        let tempBase = startTemp;
+        let tempVal = startTemp;
+        for (const step of tempSteps) {
+            const start = step.start * 60 * 1000;
+            const ramp = step.ramp * 60 * 1000;
+            if (t < start) break;
+            const progress = Math.min(1, (t - start) / Math.max(1, ramp));
+            tempVal = tempBase + (step.target - tempBase) * progress;
+            if (t >= start + ramp) {
+                tempBase = step.target;
+            } else {
+                tempBase = tempBase + (step.target - tempBase) * progress;
+            }
+        }
+
+        let carbonBase = startCarbon;
+        let carbonVal = startCarbon;
+        for (const step of carbonSteps) {
+            const start = step.start * 60 * 1000;
+            const ramp = step.ramp * 60 * 1000;
+            if (t < start) break;
+            const progress = Math.min(1, (t - start) / Math.max(1, ramp));
+            carbonVal = carbonBase + (step.target - carbonBase) * progress;
+            if (t >= start + ramp) {
+                carbonBase = step.target;
+            } else {
+                carbonBase = carbonBase + (step.target - carbonBase) * progress;
+            }
+            if (step.effects) {
+                for (const eff of step.effects) {
+                    const effStart = start + eff.start * 60 * 1000;
+                    const effEnd = effStart + eff.duration * 60 * 1000;
+                    if (t >= effStart && t < effEnd) {
+                        carbonVal += eff.offset;
+                        break;
+                    }
+                }
+            }
+        }
+
+        pts.push({ time: t, temperature: tempVal, carbon: carbonVal });
+    }
+
+    return pts;
+}

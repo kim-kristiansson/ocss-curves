@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from "react";
-import { useSimulation, type Scenario, DEFAULTS } from "./hooks/useSimulation";
+import {
+    useSimulation,
+    type Scenario,
+    DEFAULTS,
+    simulateScenario,
+} from "./hooks/useSimulation";
 import Chart from "./components/Chart";
 import Controls from "./components/Controls";
 import Sliders from "./components/Sliders";
@@ -20,89 +25,15 @@ export default function App() {
         scenario.steps
     );
 
-    const scenarioPoints = useMemo(() => {
-        type Pt = { time: number; temperature: number; carbon: number };
-        const tempEvents: { time: number; temperature: number }[] = [];
-        const carbonEvents: { time: number; carbon: number }[] = [];
-
-        let temp = scenario.startTemp;
-        let carbon = scenario.startCarbon;
-
-        tempEvents.push({ time: 0, temperature: temp });
-        carbonEvents.push({ time: 0, carbon });
-
-        let tempTime = 0;
-        let carbonTime = 0;
-
-        scenario.steps.forEach((s) => {
-            if (s.type === "temperature") {
-                const start = tempTime * 60 * 1000;
-                tempEvents.push({ time: start, temperature: temp });
-                const rampEnd = start + s.ramp * 60 * 1000;
-                temp = s.target;
-                tempEvents.push({ time: rampEnd, temperature: temp });
-                const end = rampEnd + s.duration * 60 * 1000;
-                tempEvents.push({ time: end, temperature: temp });
-                tempTime += s.ramp + s.duration;
-            } else if (s.type === "carbon") {
-                const start = carbonTime * 60 * 1000;
-                carbonEvents.push({ time: start, carbon });
-                const rampEnd = start + s.ramp * 60 * 1000;
-                carbon = s.target;
-                carbonEvents.push({ time: rampEnd, carbon });
-
-                const end = rampEnd + s.duration * 60 * 1000;
-
-                if (s.effects && s.effects.length > 0) {
-                    const sorted = [...s.effects].sort(
-                        (a, b) => a.start - b.start
-                    );
-                    let currentOffset = 0;
-                    sorted.forEach((eff) => {
-                        const effStart = start + eff.start * 60 * 1000;
-                        const effEnd = effStart + eff.duration * 60 * 1000;
-                        carbonEvents.push({ time: effStart, carbon: carbon + currentOffset });
-                        currentOffset = eff.offset;
-                        carbonEvents.push({ time: effStart, carbon: carbon + currentOffset });
-                        carbonEvents.push({ time: effEnd, carbon: carbon + currentOffset });
-                        currentOffset = 0;
-                        carbonEvents.push({ time: effEnd, carbon: carbon });
-                    });
-                    carbonEvents.push({ time: end, carbon });
-                } else {
-                    carbonEvents.push({ time: end, carbon });
-                }
-
-                carbonTime += s.ramp + s.duration;
-            }
-        });
-
-        const times = Array.from(
-            new Set([
-                ...tempEvents.map((e) => e.time),
-                ...carbonEvents.map((e) => e.time),
-            ])
-        ).sort((a, b) => a - b);
-
-        const pts: Pt[] = [];
-        let ti = 0;
-        let ci = 0;
-        let lastTemp = scenario.startTemp;
-        let lastCarbon = scenario.startCarbon;
-        times.forEach((t) => {
-            while (ti < tempEvents.length && tempEvents[ti].time <= t) {
-                lastTemp = tempEvents[ti].temperature;
-                ti++;
-            }
-            while (ci < carbonEvents.length && carbonEvents[ci].time <= t) {
-                lastCarbon = carbonEvents[ci].carbon;
-                ci++;
-            }
-            pts.push({ time: t, temperature: lastTemp, carbon: lastCarbon });
-        });
-
-        return pts;
-    }, [scenario]);
+    const scenarioPoints = useMemo(
+        () =>
+            simulateScenario(
+                scenario.startTemp,
+                scenario.startCarbon,
+                scenario.steps
+            ),
+        [scenario]
+    );
 
     const [chartWidth, setChartWidth] = useState(1200);
     const [chartHeight, setChartHeight] = useState(600);
