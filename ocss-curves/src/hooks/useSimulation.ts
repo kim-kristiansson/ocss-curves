@@ -78,6 +78,10 @@ export function useSimulation(
     const [responsiveness, setResponsiveness] = useState(DEFAULTS.responsiveness);
     const [noise, setNoise] = useState(DEFAULTS.noise);
     const [offset, setOffset] = useState(DEFAULTS.offset);
+    const offsetRef = useRef(offset);
+    useEffect(() => {
+        offsetRef.current = offset;
+    }, [offset]);
 
     const [alarmMargin, setAlarmMargin] = useState(DEFAULTS.alarmMargin);
     const responsivenessRef = useRef(responsiveness);
@@ -146,10 +150,10 @@ export function useSimulation(
                 let setTemp = targetTempRef.current;
                 let baseCarbon = carbonTargetRef.current;
                 let setCarbon = baseCarbon;
-                let respVal = DEFAULTS.responsiveness;
-                let noiseVal = DEFAULTS.noise;
-                let marginVal = DEFAULTS.alarmMargin;
-                let offsetVal = DEFAULTS.offset;
+                let respVal = responsivenessRef.current;
+                let noiseVal = noiseRef.current;
+                let marginVal = alarmMarginRef.current;
+                let offsetVal = offsetRef.current;
 
                 if (
                     tempStepsRef.current.length > 0 ||
