@@ -101,7 +101,6 @@ export function useSimulation(
     const [alarmEvents, setAlarmEvents] = useState<AlarmEvent[]>([]);
 
     const simTimeRef = useRef(0);
-    const noiseStateRef = useRef(0);
     type TempStep = Extract<ScenarioStep, { type: "temperature" }> & { start: number };
     type CarbonStep = Extract<ScenarioStep, { type: "carbon" }> & { start: number };
 
@@ -258,18 +257,16 @@ export function useSimulation(
                 let measuredTemp = lastTemp + (setTemp - lastTemp) * (stepMs / 5000);
                 if (Math.random() < 0.02) measuredTemp += Math.random() * 4 - 2;
 
-                // Carbon with filtered noise
+                // Carbon with noise
                 const drift =
                     1 - Math.exp(-responsivenessRef.current * (stepMs / 1000));
                 const baseLast = lastCarbon - prevOffset;
                 const carbonDrift = (setCarbonVal - baseLast) * drift;
 
                 const randomShock = (Math.random() * 2 - 1) * noiseRef.current;
-                noiseStateRef.current =
-                    noiseStateRef.current * 0.9 + randomShock * 0.1;
 
                 const measuredCarbon =
-                    baseLast + carbonDrift + noiseStateRef.current + currentOffset;
+                    baseLast + carbonDrift + randomShock + currentOffset;
 
                 // 10s moving average
                 const windowMs = 10 * 1000;
@@ -346,7 +343,6 @@ export function useSimulation(
         reset: () => {
             setData([]);
             simTimeRef.current = 0;
-            noiseStateRef.current = 0;
             targetTempRef.current = initialTemp;
             setTargetTemp(initialTemp);
             carbonTargetRef.current = initialCarbon;
