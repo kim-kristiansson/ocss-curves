@@ -221,18 +221,8 @@ export function useSimulation(
                             }
                         }
                     });
-                    const adjustedCarbon = baseCarbon + offsetVal;
-                    carbonTargetRef.current = adjustedCarbon;
-                    setCarbonTarget(adjustedCarbon);
-
-                    responsivenessRef.current = respVal;
-                    setResponsiveness(respVal);
-                    noiseRef.current = noiseVal;
-                    setNoise(noiseVal);
-                    offsetRef.current = offsetVal;
-                    setOffset(offsetVal);
-                    alarmMarginRef.current = marginVal;
-                    setAlarmMargin(marginVal);
+                    carbonTargetRef.current = baseCarbon;
+                    setCarbonTarget(baseCarbon);
                 } else {
                     const rampTime = 60 * 1000;
                     const progress = Math.min(
@@ -241,10 +231,20 @@ export function useSimulation(
                     );
                     setTemp = progress * targetTempRef.current;
                     baseCarbon = progress * carbonTargetRef.current;
-                    const adjustedCarbon = baseCarbon + offsetVal;
-                    carbonTargetRef.current = adjustedCarbon;
-                    setCarbonTarget(adjustedCarbon);
+                    carbonTargetRef.current = baseCarbon;
+                    setCarbonTarget(baseCarbon);
                 }
+
+                responsivenessRef.current = respVal;
+                setResponsiveness(respVal);
+                noiseRef.current = noiseVal;
+                setNoise(noiseVal);
+                alarmMarginRef.current = marginVal;
+                setAlarmMargin(marginVal);
+
+                const prevOffset = offsetRef.current;
+                offsetRef.current = offsetVal;
+                setOffset(offsetVal);
 
                 const setCarbon = carbonTargetRef.current;
 
@@ -255,14 +255,15 @@ export function useSimulation(
                 // Carbon with filtered noise
                 const drift =
                     1 - Math.exp(-responsivenessRef.current * (stepMs / 1000));
-                const carbonDrift = (setCarbon - lastCarbon) * drift;
+                const baseLast = lastCarbon - prevOffset;
+                const carbonDrift = (setCarbon - baseLast) * drift;
 
                 const randomShock = (Math.random() * 2 - 1) * noiseRef.current;
                 noiseStateRef.current =
                     noiseStateRef.current * 0.9 + randomShock * 0.1;
 
                 const measuredCarbon =
-                    lastCarbon + carbonDrift + noiseStateRef.current;
+                    baseLast + carbonDrift + noiseStateRef.current + offsetRef.current;
 
                 // 10s moving average
                 const windowMs = 10 * 1000;
