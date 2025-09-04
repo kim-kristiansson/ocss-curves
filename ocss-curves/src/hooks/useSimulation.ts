@@ -88,11 +88,6 @@ export function useSimulation(
     useEffect(() => {
         noiseRef.current = noise;
     }, [noise]);
-    const offsetRef = useRef(offset);
-    const prevOffsetRef = useRef(offset);
-    useEffect(() => {
-        offsetRef.current = offset;
-    }, [offset]);
     const alarmMarginRef = useRef(alarmMargin);
     useEffect(() => {
         alarmMarginRef.current = alarmMargin;
@@ -221,7 +216,7 @@ export function useSimulation(
                                 }
                             }
                         }
-                        setCarbon = baseCarbon;
+                        setCarbon = baseCarbon + offsetVal;
                     });
                     carbonTargetRef.current = setCarbon;
                     setCarbonTarget(setCarbon);
@@ -237,7 +232,6 @@ export function useSimulation(
                     setCarbonTarget(baseCarbon);
                 }
 
-                offsetRef.current = offsetVal;
                 setOffset(offsetVal);
 
                 responsivenessRef.current = respVal;
@@ -247,12 +241,6 @@ export function useSimulation(
                 alarmMarginRef.current = marginVal;
                 setAlarmMargin(marginVal);
 
-                const prevOffset = prevOffsetRef.current;
-                const currentOffset = offsetRef.current;
-                prevOffsetRef.current = currentOffset;
-
-                const setCarbonVal = carbonTargetRef.current;
-
                 // Temperature (gentle approach to setpoint)
                 let measuredTemp = lastTemp + (setTemp - lastTemp) * (stepMs / 5000);
                 if (Math.random() < 0.02) measuredTemp += Math.random() * 4 - 2;
@@ -260,13 +248,13 @@ export function useSimulation(
                 // Carbon with noise
                 const drift =
                     1 - Math.exp(-responsivenessRef.current * (stepMs / 1000));
-                const baseLast = lastCarbon - prevOffset;
-                const carbonDrift = (setCarbonVal - baseLast) * drift;
+                const carbonDrift =
+                    (carbonTargetRef.current - lastCarbon) * drift;
 
                 const randomShock = (Math.random() * 2 - 1) * noiseRef.current;
 
                 const measuredCarbon =
-                    baseLast + carbonDrift + randomShock + currentOffset;
+                    lastCarbon + carbonDrift + randomShock;
 
                 // 10s moving average
                 const windowMs = 10 * 1000;
