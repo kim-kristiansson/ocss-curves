@@ -221,8 +221,9 @@ export function useSimulation(
                             }
                         }
                     });
-                    carbonTargetRef.current = baseCarbon;
-                    setCarbonTarget(baseCarbon);
+                    const adjustedCarbon = baseCarbon + offsetVal;
+                    carbonTargetRef.current = adjustedCarbon;
+                    setCarbonTarget(adjustedCarbon);
 
                     responsivenessRef.current = respVal;
                     setResponsiveness(respVal);
@@ -240,9 +241,12 @@ export function useSimulation(
                     );
                     setTemp = progress * targetTempRef.current;
                     baseCarbon = progress * carbonTargetRef.current;
+                    const adjustedCarbon = baseCarbon + offsetVal;
+                    carbonTargetRef.current = adjustedCarbon;
+                    setCarbonTarget(adjustedCarbon);
                 }
 
-                const setCarbon = baseCarbon + offsetVal;
+                const setCarbon = carbonTargetRef.current;
 
                 // Temperature (gentle approach to setpoint)
                 let measuredTemp = lastTemp + (setTemp - lastTemp) * (stepMs / 5000);
