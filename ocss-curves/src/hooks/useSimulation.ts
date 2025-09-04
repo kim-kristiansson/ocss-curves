@@ -89,6 +89,7 @@ export function useSimulation(
         noiseRef.current = noise;
     }, [noise]);
     const offsetRef = useRef(offset);
+    const prevOffsetRef = useRef(offset);
     useEffect(() => {
         offsetRef.current = offset;
     }, [offset]);
@@ -150,7 +151,7 @@ export function useSimulation(
 
                 let setTemp = targetTempRef.current;
                 let baseCarbon = carbonTargetRef.current;
-                let offsetVal = DEFAULTS.offset;
+                let setCarbon = baseCarbon;
                 let respVal = DEFAULTS.responsiveness;
                 let noiseVal = DEFAULTS.noise;
                 let marginVal = DEFAULTS.alarmMargin;
@@ -202,6 +203,7 @@ export function useSimulation(
                                 (step.target - carbonBase) * progress;
                         }
 
+                        let effective = baseCarbon;
                         if (step.effects) {
                             for (const eff of step.effects) {
                                 const effStart =
@@ -214,15 +216,16 @@ export function useSimulation(
                                 ) {
                                     respVal = eff.responsiveness;
                                     noiseVal = eff.noise;
-                                    offsetVal = eff.offset;
                                     marginVal = eff.alarmMargin;
+                                    effective = baseCarbon + eff.offset;
                                     break;
                                 }
                             }
                         }
+                        setCarbon = effective;
                     });
-                    carbonTargetRef.current = baseCarbon;
-                    setCarbonTarget(baseCarbon);
+                    carbonTargetRef.current = setCarbon;
+                    setCarbonTarget(setCarbon);
                 } else {
                     const rampTime = 60 * 1000;
                     const progress = Math.min(
@@ -242,11 +245,11 @@ export function useSimulation(
                 alarmMarginRef.current = marginVal;
                 setAlarmMargin(marginVal);
 
-                const prevOffset = offsetRef.current;
-                offsetRef.current = offsetVal;
-                setOffset(offsetVal);
+                const prevOffset = prevOffsetRef.current;
+                const currentOffset = offsetRef.current;
+                prevOffsetRef.current = currentOffset;
 
-                const setCarbon = carbonTargetRef.current;
+                const setCarbonVal = carbonTargetRef.current;
 
                 // Temperature (gentle approach to setpoint)
                 let measuredTemp = lastTemp + (setTemp - lastTemp) * (stepMs / 5000);
@@ -256,14 +259,14 @@ export function useSimulation(
                 const drift =
                     1 - Math.exp(-responsivenessRef.current * (stepMs / 1000));
                 const baseLast = lastCarbon - prevOffset;
-                const carbonDrift = (setCarbon - baseLast) * drift;
+                const carbonDrift = (setCarbonVal - baseLast) * drift;
 
                 const randomShock = (Math.random() * 2 - 1) * noiseRef.current;
                 noiseStateRef.current =
                     noiseStateRef.current * 0.9 + randomShock * 0.1;
 
                 const measuredCarbon =
-                    baseLast + carbonDrift + noiseStateRef.current + offsetRef.current;
+                    baseLast + carbonDrift + noiseStateRef.current + currentOffset;
 
                 // 10s moving average
                 const windowMs = 10 * 1000;
