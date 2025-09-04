@@ -155,6 +155,7 @@ export function useSimulation(
                 let respVal = DEFAULTS.responsiveness;
                 let noiseVal = DEFAULTS.noise;
                 let marginVal = DEFAULTS.alarmMargin;
+                let offsetVal = DEFAULTS.offset;
 
                 if (
                     tempStepsRef.current.length > 0 ||
@@ -203,7 +204,6 @@ export function useSimulation(
                                 (step.target - carbonBase) * progress;
                         }
 
-                        let effective = baseCarbon;
                         if (step.effects) {
                             for (const eff of step.effects) {
                                 const effStart =
@@ -217,12 +217,12 @@ export function useSimulation(
                                     respVal = eff.responsiveness;
                                     noiseVal = eff.noise;
                                     marginVal = eff.alarmMargin;
-                                    effective = baseCarbon + eff.offset;
+                                    offsetVal = eff.offset;
                                     break;
                                 }
                             }
                         }
-                        setCarbon = effective;
+                        setCarbon = baseCarbon;
                     });
                     carbonTargetRef.current = setCarbon;
                     setCarbonTarget(setCarbon);
@@ -237,6 +237,9 @@ export function useSimulation(
                     carbonTargetRef.current = baseCarbon;
                     setCarbonTarget(baseCarbon);
                 }
+
+                offsetRef.current = offsetVal;
+                setOffset(offsetVal);
 
                 responsivenessRef.current = respVal;
                 setResponsiveness(respVal);
