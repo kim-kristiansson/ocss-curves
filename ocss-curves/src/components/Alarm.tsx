@@ -1,6 +1,11 @@
-import React from "react";
+type Props = {
+    alarm: boolean;
+    avgCarbon: number;
+    alarmMargin: number;
+    onAcknowledge: () => void;
+};
 
-export default function Alarm({ alarm, avgCarbon, alarmMargin, onAcknowledge }) {
+export default function Alarm({ alarm, avgCarbon, alarmMargin, onAcknowledge }: Props) {
     if (!alarm) return null;
 
     return (

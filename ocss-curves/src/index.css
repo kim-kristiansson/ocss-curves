@@ -1,0 +1,86 @@
+body {
+  font-family: sans-serif;
+}
+
+.scenario-editor {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  margin-top: 1rem;
+  max-width: 600px;
+  background: #fafafa;
+  border-radius: 4px;
+}
+
+.drag-hint {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 0.5rem;
+}
+
+.scenario-step {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 4px;
+}
+
+.scenario-step.dragging {
+  opacity: 0.5;
+}
+
+.drag-handle {
+  width: 14px;
+  align-self: stretch;
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0e0e0;
+  border-radius: 4px;
+}
+
+.drag-handle::before {
+  content: "";
+  width: 4px;
+  height: 70%;
+  background: repeating-linear-gradient(
+    to bottom,
+    #999,
+    #999 2px,
+    transparent 2px,
+    transparent 4px
+  );
+  border-radius: 2px;
+}
+
+.step-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scenario-step label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+.field-pair {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.controls-fields {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  border-left: 3px solid #ccc;
+  background: #f7f7f7;
+  border-radius: 4px;
+}

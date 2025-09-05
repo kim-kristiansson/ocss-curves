@@ -1,12 +1,39 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useSimulation } from "./hooks/useSimulation";
+import { useState, useRef, useEffect, useMemo } from "react";
+import {
+    useSimulation,
+    type Scenario,
+    DEFAULTS,
+    simulateScenario,
+} from "./hooks/useSimulation";
 import Chart from "./components/Chart";
 import Controls from "./components/Controls";
 import Sliders from "./components/Sliders";
 import Alarm from "./components/Alarm";
+import ScenarioEditor from "./components/ScenarioEditor";
 
 export default function App() {
-    const sim = useSimulation(860);
+    const [scenario, setScenario] = useState<Scenario>({
+        startTemp: 0,
+        startCarbon: DEFAULTS.carbonTarget,
+        steps: [],
+    });
+    const [editingScenario, setEditingScenario] = useState(false);
+    const sim = useSimulation(
+        scenario.startTemp,
+        scenario.startCarbon,
+        100,
+        scenario.steps
+    );
+
+    const scenarioPoints = useMemo(
+        () =>
+            simulateScenario(
+                scenario.startTemp,
+                scenario.startCarbon,
+                scenario.steps
+            ),
+        [scenario]
+    );
 
     const [chartWidth, setChartWidth] = useState(1200);
     const [chartHeight, setChartHeight] = useState(600);
@@ -32,6 +59,7 @@ export default function App() {
             <div ref={containerRef}>
                 <Chart
                     data={sim.data}
+                    scenario={scenarioPoints}
                     chartWidth={chartWidth}
                     chartHeight={chartHeight}
                     containerRef={containerRef}
@@ -70,6 +98,15 @@ export default function App() {
                 setAlarmMargin={sim.setAlarmMargin}
             />
 
+            {editingScenario ? (
+                <div>
+                    <ScenarioEditor scenario={scenario} setScenario={setScenario} />
+                    <button onClick={() => setEditingScenario(false)}>Stäng scenario</button>
+                </div>
+            ) : (
+                <button onClick={() => setEditingScenario(true)}>Skapa scenario</button>
+            )}
+
             <Alarm alarm={sim.alarm} avgCarbon={sim.avgCarbon} alarmMargin={sim.alarmMargin} onAcknowledge={sim.acknowledgeAlarm} />
 
             <style>{`
@@ -79,8 +116,8 @@ export default function App() {
           color: white;
           background: #111;
           max-width: 100vw;
-          max-height: 100vh;
-          overflow: hidden;
+          min-height: 100vh;
+          overflow-y: auto;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;

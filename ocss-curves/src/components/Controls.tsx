@@ -1,6 +1,11 @@
-import React from "react";
+type Props = {
+    onStart: () => void;
+    onStop: () => void;
+    setSpeed: (v: number) => void;
+    onDefaults: () => void;
+};
 
-export default function Controls({ onStart, onStop, setSpeed, onDefaults }) {
+export default function Controls({ onStart, onStop, setSpeed, onDefaults }: Props) {
     return (
         <div className="controls">
             <button

@@ -1,4 +1,15 @@
-import React from "react";
+type Props = {
+    carbonTarget: number;
+    setCarbonTarget: (v: number) => void;
+    responsiveness: number;
+    setResponsiveness: (v: number) => void;
+    noise: number;
+    setNoise: (v: number) => void;
+    offset: number;
+    setOffset: (v: number) => void;
+    alarmMargin: number;
+    setAlarmMargin: (v: number) => void;
+};
 
 export default function Sliders({
                                     carbonTarget,
@@ -11,12 +22,12 @@ export default function Sliders({
                                     setOffset,
                                     alarmMargin,
                                     setAlarmMargin,
-                                }) {
+                                }: Props) {
     return (
         <div className="sliders">
             <label>
                 Bör-värde Kolhalt: {carbonTarget.toFixed(2)}
-                <input type="range" min="0" max="2" step="0.01" value={carbonTarget} onChange={(e) => setCarbonTarget(+e.target.value)} />
+                <input type="range" min="0" max="1.6" step="0.01" value={carbonTarget} onChange={(e) => setCarbonTarget(+e.target.value)} />
             </label>
             <label>
                 Responsiveness: {responsiveness.toFixed(2)}

@@ -1,20 +1,32 @@
-import React from "react";
+import type { RefObject } from "react";
+
+const MAX_TEMP = 1600;
+const MAX_CARBON = 1.6;
 
 type AlarmEvent = { time: number; value: number };
 
+type ScenarioPoint = { time: number; temperature: number; carbon: number };
+
 type Props = {
-    data: { time: number; carbon: number; temperature: number; carbonAvg: number }[];
+    data: {
+        time: number;
+        carbon: number;
+        temperature: number;
+        carbonAvg: number;
+    }[];
+    scenario?: ScenarioPoint[];
     chartWidth: number;
     chartHeight: number;
-    containerRef: React.RefObject<HTMLDivElement>;
+    containerRef: RefObject<HTMLDivElement | null>;
     targetTemp: number;
     carbonTarget: number;
     alarmMargin: number;
-    alarmEvents: AlarmEvent[]; // new
+    alarmEvents: AlarmEvent[];
 };
 
 export default function Chart({
                                   data,
+                                  scenario = [],
                                   chartWidth,
                                   chartHeight,
                                   containerRef,
@@ -23,7 +35,7 @@ export default function Chart({
                                   alarmMargin,
                                   alarmEvents,
                               }: Props) {
-    if (data.length < 2) {
+    if (data.length < 2 && scenario.length < 2) {
         return (
             <div ref={containerRef} className="chart-container">
                 Ingen data ännu
@@ -31,18 +43,27 @@ export default function Chart({
         );
     }
 
-    const minTime = data[0].time;
-    const maxTime = data[data.length - 1].time;
+    const allTimes = [
+        ...(data.length ? [data[0].time, data[data.length - 1].time] : []),
+        ...(scenario.length
+            ? [scenario[0].time, scenario[scenario.length - 1].time]
+            : []),
+    ];
+    const minTime = Math.min(...allTimes);
+    const maxTime = Math.max(...allTimes);
     const padding = 60;
 
     const scaleX = (t: number, width: number, pad: number) =>
         ((t - minTime) / (maxTime - minTime)) * (width - pad * 2) + pad;
 
     const scaleTempY = (val: number, height: number, pad: number) =>
-        height - ((val - 0) / targetTemp) * (height - pad * 2);
+        height - ((val - 0) / MAX_TEMP) * (height - pad * 2);
 
     const scaleCarbonY = (val: number, height: number, pad: number) =>
-        height - ((val - 0) / 2) * (height - pad * 2);
+        height - ((val - 0) / MAX_CARBON) * (height - pad * 2);
+
+    const tempTicks = Array.from({ length: 5 }, (_, i) => (MAX_TEMP / 4) * i);
+    const carbonTicks = Array.from({ length: 5 }, (_, i) => (MAX_CARBON / 4) * i);
 
     const buildPath = (
         key: "temperature" | "carbon" | "carbonAvg",
@@ -62,6 +83,24 @@ export default function Chart({
             )
             .join(" ");
 
+    const buildScenarioPath = (
+        key: "temperature" | "carbon",
+        scaleFn: (v: number, h: number, p: number) => number,
+        width: number,
+        height: number,
+        pad: number
+    ) =>
+        scenario
+            .map(
+                (d, i) =>
+                    `${i === 0 ? "M" : "L"} ${scaleX(d.time, width, pad)} ${scaleFn(
+                        d[key as keyof typeof d],
+                        height,
+                        pad
+                    )}`
+            )
+            .join(" ");
+
     return (
         <div className="chart-container" ref={containerRef}>
             <svg
@@ -69,6 +108,78 @@ export default function Chart({
                 preserveAspectRatio="xMidYMid meet"
                 style={{width: "100%", height: "100%", display: "block"}}
             >
+                {/* Axes */}
+                <line
+                    x1={padding}
+                    x2={padding}
+                    y1={padding}
+                    y2={chartHeight - padding}
+                    stroke="#555"
+                />
+                <line
+                    x1={chartWidth - padding}
+                    x2={chartWidth - padding}
+                    y1={padding}
+                    y2={chartHeight - padding}
+                    stroke="#555"
+                />
+
+                {tempTicks.map((t) => (
+                    <text
+                        key={`temp-${t}`}
+                        x={padding - 10}
+                        y={scaleTempY(t, chartHeight, padding) + 4}
+                        fontSize={12}
+                        fill="red"
+                        textAnchor="end"
+                    >
+                        {t}
+                    </text>
+                ))}
+
+                {carbonTicks.map((c) => (
+                    <text
+                        key={`carbon-${c}`}
+                        x={chartWidth - padding + 10}
+                        y={scaleCarbonY(c, chartHeight, padding) + 4}
+                        fontSize={12}
+                        fill="green"
+                        textAnchor="start"
+                    >
+                        {c.toFixed(1)}
+                    </text>
+                ))}
+
+                {scenario.length > 0 && (
+                    <>
+                        <path
+                            d={buildScenarioPath(
+                                "temperature",
+                                scaleTempY,
+                                chartWidth,
+                                chartHeight,
+                                padding
+                            )}
+                            fill="none"
+                            stroke="orange"
+                            strokeWidth={1}
+                            strokeDasharray="4,2"
+                        />
+                        <path
+                            d={buildScenarioPath(
+                                "carbon",
+                                scaleCarbonY,
+                                chartWidth,
+                                chartHeight,
+                                padding
+                            )}
+                            fill="none"
+                            stroke="lime"
+                            strokeWidth={1}
+                            strokeDasharray="4,2"
+                        />
+                    </>
+                )}
                 {/* Temperature */}
                 <path
                     d={buildPath("temperature", scaleTempY, chartWidth, chartHeight, padding)}
