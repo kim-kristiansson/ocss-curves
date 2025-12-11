@@ -1,0 +1,54 @@
+.app {
+    font-family: system-ui, Segoe UI, Arial, sans-serif;
+    padding: 16px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.grid-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.controls-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.controls-row span {
+    width: 60px;
+}
+
+.controls-row input[type="number"] {
+    width: 100px;
+}
+
+.controls-row input[type="range"] {
+    flex: 1;
+}
+
+.chart {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+}
+
+
+.status {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #444;
+}
+
