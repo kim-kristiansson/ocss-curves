@@ -356,14 +356,13 @@ function CarbonEffectsSliderPanel({
     }, [fx]);
 
     const rowStyle: React.CSSProperties = {
-        display: "grid",
-        gridTemplateColumns: "auto 1fr auto",
+        display: "flex",
         alignItems: "center",
         gap: 8,
         margin: compact ? "6px 0" : "8px 0",
     };
 
-    // Prevent DnD when interacting with sliders
+    // Prevent DnD when interacting with inputs
     const block = useMemo(
         () => ({
             onMouseDown: (e: React.MouseEvent) => e.stopPropagation(),
@@ -373,70 +372,78 @@ function CarbonEffectsSliderPanel({
         []
     );
 
-    const onRange = (patch: Partial<ChannelEffects>) => setLocal((prev) => ({ ...prev, ...patch }));
-    const onUp = () => onChange(local);
+    const onNum = (key: keyof ChannelEffects) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = Number(e.target.value);
+        setLocal((prev) => ({ ...prev, [key]: val }));
+        onChange({ ...local, [key]: val });
+    };
+
+    const onCheck = (key: keyof ChannelEffects) => (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.checked;
+        setLocal((prev) => ({ ...prev, [key]: val }));
+        onChange({ ...local, [key]: val });
+    };
 
     return (
-        <fieldset style={{border: "1px dashed #ddd", borderRadius: 6, padding: compact ? 6 : 8}} {...block}
-                  onPointerUp={onUp}>
-            <legend style={{fontSize: 12, color: "#555"}}>{compact ? "Effekt" : "Effekt"}</legend>
+        <fieldset style={{border: "1px dashed #ddd", borderRadius: 6, padding: compact ? 6 : 8}} {...block}>
+            <legend style={{fontSize: 12, color: "#555"}}>Effekt</legend>
 
             <div style={rowStyle}>
-                <span>brusfaktor</span>
-                <input
-                    type="range"
-                    min={0}
-                    max={50}
-                    step={0.1}
-                    value={local.noiseFactor ?? 1}
-                    onChange={(e) => onRange({noiseFactor: Number(e.target.value)})}
-                />
-                <code>{(local.noiseFactor ?? 1).toFixed(1)}</code>
+                <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    brusfaktor
+                    <input
+                        type="number"
+                        step="0.1"
+                        value={local.noiseFactor ?? 0}
+                        onChange={onNum("noiseFactor")}
+                        style={{ width: 80 }}
+                    />
+                </label>
             </div>
 
             <div style={rowStyle}>
-                <span>drift/min</span>
-                <input
-                    type="range"
-                    min={-0.1}
-                    max={0.1}
-                    step={0.005}
-                    value={local.driftPerMin ?? 0}
-                    onChange={(e) => onRange({driftPerMin: Number(e.target.value)})}
-                />
-                <code>{(local.driftPerMin ?? 0).toFixed(4)}</code>
+                <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    drift/min
+                    <input
+                        type="number"
+                        step="0.0001"
+                        value={local.driftPerMin ?? 0}
+                        onChange={onNum("driftPerMin")}
+                        style={{ width: 100 }}
+                    />
+                </label>
             </div>
 
             <div style={rowStyle}>
-                <span>spik@start</span>
-                <input
-                    type="range"
-                    min={0}
-                    max={0.2}
-                    step={0.005}
-                    value={local.spikeAtStart ?? 0}
-                    onChange={(e) => onRange({spikeAtStart: Number(e.target.value)})}
-                />
-                <code>{(local.spikeAtStart ?? 0).toFixed(3)}</code>
+                <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    spik@start
+                    <input
+                        type="number"
+                        step="0.01"
+                        value={local.spikeAtStart ?? 0}
+                        onChange={onNum("spikeAtStart")}
+                        style={{ width: 100 }}
+                    />
+                </label>
             </div>
 
             <div style={rowStyle}>
-                <span>offset (%)</span>
-                <input
-                    type="range"
-                    min={-0.2}
-                    max={0.2}
-                    step={0.001}
-                    value={local.offset ?? 0}
-                    onChange={(e) => onRange({offset: Number(e.target.value)})}
-                />
-                <code>{(local.offset ?? 0).toFixed(3)}</code>
+                <label style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    offset
+                    <input
+                        type="number"
+                        step="0.001"
+                        value={local.offset ?? 0}
+                        onChange={onNum("offset")}
+                        style={{ width: 100 }}
+                    />
+                </label>
             </div>
 
-            <div style={{display: "flex", alignItems: "center", gap: 8}}>
+            <div style={rowStyle}>
                 <label style={{display: "flex", alignItems: "center", gap: 6}}>
                     <input type="checkbox" checked={!!local.flatline}
-                           onChange={(e) => onRange({flatline: e.target.checked})}/>
+                           onChange={onCheck("flatline")}/>
                     fast linje
                 </label>
             </div>

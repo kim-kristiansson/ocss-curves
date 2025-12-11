@@ -6,7 +6,6 @@ import { ScenarioEditor } from "./ScenarioEditor";
 // ---- effect intensity tuning ----
 const TEMP_NOISE_BASE = 0.5;      // tiny default noise (°C)
 const CARBON_NOISE_BASE = 0.015;
-const CARBON_DRIFT_GAIN = 1.75;
 // ---------------------------------
 
 /** Deterministisk RNG (valfritt för instant) */
@@ -171,7 +170,7 @@ function stepOnce(
         carbonTrack = startTrack(carbonTrack, state.carbon, carbonTarget, tNext, carbonEnd);
     }
 
-    // Baseline interpolation (use previous STATE if not in a ramp)
+    // Baseline interpolation
     const lerp = (a: number, b: number, u: number) => a + (b - a) * u;
     const progress = (track?: RampTrack): number => {
         if (!track) return 1;
@@ -181,26 +180,20 @@ function stepOnce(
     };
 
     const uT = progress(tempTrack);
-    const uC = progress(carbonTrack);
 
-    let baseTemp   = tempTrack   ? lerp(tempTrack.from,   tempTrack.to,   uT) : state.temp;
-    let baseCarbon = carbonTrack ? lerp(carbonTrack.from, carbonTrack.to, uC) : state.carbon;
+    // Temperature: use track interpolation (no drift effects on temp)
+    let baseTemp = tempTrack ? lerp(tempTrack.from, tempTrack.to, uT) : state.temp;
 
-    // Snap at ramp end (before applying effects)
+    // Snap temp at ramp end
     if (tempTrack && tNext >= tempTrack.end) {
         baseTemp = tempTarget;
         tempTrack = undefined;
     }
-    if (carbonTrack && tNext >= carbonTrack.end) {
-        baseCarbon = carbonTarget;
-        carbonTrack = undefined;
-    }
 
-    // ---------- STATE updates (noise-free) ----------
-    // Drift is a rate -> integrate with dt
+    // ---------- Carbon: always build from state to allow drift accumulation ----------
     const legacyCarbonDriftRate = effLegacy?.carbon?.drift ?? 0;
     const fxCarbonDriftRate     = fx?.carbon?.driftPerMin ?? 0;
-    const driftDelta = (legacyCarbonDriftRate + CARBON_DRIFT_GAIN * fxCarbonDriftRate) * dtMin;
+    const driftRate = legacyCarbonDriftRate + fxCarbonDriftRate;
 
     // Spikes: includes legacy spikes + one-shot offsets injected by compiler
     const legacyCarbonSpike = effLegacy?.carbon?.spike ?? 0;
@@ -209,10 +202,33 @@ function stepOnce(
     // Flatline freezes carbon state
     const isCarbonFlatline = !!(effLegacy?.carbon?.flatline) || !!(fx?.carbon?.flatline);
 
+    let baseCarbon: number;
+    if (isCarbonFlatline) {
+        baseCarbon = state.carbon;
+    } else if (carbonTrack && tNext < carbonTrack.end) {
+        // During ramp: move from current state toward target at ramp-determined rate
+        // NO drift during ramp - drift only applies during hold
+        const timeRemaining = Math.max(EPS, carbonTrack.end - tNext);
+        const valueRemaining = carbonTarget - state.carbon;
+        const rampMove = (valueRemaining / timeRemaining) * dtMin;
+        baseCarbon = state.carbon + rampMove;
+    } else {
+        // No active ramp (hold phase): apply drift
+        const driftDelta = driftRate * dtMin;
+        baseCarbon = state.carbon + driftDelta;
+    }
+
+    // Snap carbon at ramp end
+    if (carbonTrack && tNext >= carbonTrack.end) {
+        // Don't snap to target - keep accumulated drift by using current calculated value
+        carbonTrack = undefined;
+    }
+
+    // Add spikes
+    baseCarbon += legacyCarbonSpike + tbSpike;
+
     const nextTempState = clamp(baseTemp, 0, 1100);
-    const nextCarbonState = isCarbonFlatline
-        ? state.carbon
-        : clamp(baseCarbon + driftDelta + legacyCarbonSpike + tbSpike, 0, 1.6);
+    const nextCarbonState = clamp(baseCarbon, 0, 1.6);
 
     // ---------- DISPLAY noise (does not affect state) ----------
     const noiseScale = Math.sqrt(Math.max(dtMin, 1 / 60)); // ≥1s baseline
@@ -257,7 +273,7 @@ function stepOnce(
 
 /* ---------------- end stepOnce -------------------- */
 
-/** Hjälpare: hitta “övergångsmarkörer” nära t för adaptiv sampling */
+/** Hjälpare: hitta "övergångsmarkörer" nära t för adaptiv sampling */
 function onTransitionWindow(compiled: CompiledScenario, t: number) {
     const { tempDeadlineMin, carbonDeadlineMin } = compiled.getDeadlinesAt(t);
     const s = compiled.getSettleEndsIfTargetChanged(t - 1e-6, t + 1e-6);
@@ -621,11 +637,24 @@ function MultiLineChart({
         gridLines.push(<line key={`h${i}`} x1={pad} y1={y} x2={width - pad} y2={y} stroke="#eee" />);
     }
 
+    // Vertical grid lines for time
+    const xTicks = 6;
+    for (let i = 0; i <= xTicks; i++) {
+        const x = pad + (i * (width - pad * 2)) / xTicks;
+        gridLines.push(<line key={`v${i}`} x1={x} y1={pad} x2={x} y2={height - pad} stroke="#eee" />);
+    }
+
     const leftTicks: number[] = [];
     const rightTicks: number[] = [];
     for (let i = 0; i <= hTicks; i++) {
         leftTicks.push(tMin + ((tMax - tMin) * i) / hTicks);
         rightTicks.push(cMin + ((cMax - cMin) * i) / hTicks);
+    }
+
+    // Time tick values
+    const timeTicks: number[] = [];
+    for (let i = 0; i <= xTicks; i++) {
+        timeTicks.push(xMin + ((xMax - xMin) * i) / xTicks);
     }
 
     return (
@@ -638,6 +667,7 @@ function MultiLineChart({
             <path d={dTempTarget} fill="none" stroke="#1b73e8" strokeWidth={1.2} strokeDasharray="6 6" />
             <path d={dCarbonTarget} fill="none" stroke="#e86a1b" strokeWidth={1.2} strokeDasharray="6 6" />
 
+            {/* Left axis (Temperature) */}
             <line x1={pad} y1={pad} x2={pad} y2={height - pad} stroke="#aaa" />
             {leftTicks.map((v, i) => {
                 const y = toYTemp(v);
@@ -654,6 +684,7 @@ function MultiLineChart({
                 Temperatur (°C)
             </text>
 
+            {/* Right axis (Carbon) */}
             <line x1={width - pad} y1={pad} x2={width - pad} y2={height - pad} stroke="#aaa" />
             {rightTicks.map((v, i) => {
                 const y = toYCarbon(v);
@@ -670,10 +701,24 @@ function MultiLineChart({
                 Kolhalt (%)
             </text>
 
-            <text x={width - pad} y={height - 6} fontSize="10" textAnchor="end">
+            {/* X-axis (Time) */}
+            <line x1={pad} y1={height - pad} x2={width - pad} y2={height - pad} stroke="#aaa" />
+            {timeTicks.map((v, i) => {
+                const x = toX(v);
+                return (
+                    <g key={`xt${i}`}>
+                        <line x1={x} y1={height - pad} x2={x} y2={height - pad + 4} stroke="#aaa" />
+                        <text x={x} y={height - pad + 14} fontSize="10" textAnchor="middle">
+                            {v.toFixed(1)}
+                        </text>
+                    </g>
+                );
+            })}
+            <text x={width / 2} y={height - 4} fontSize="11" textAnchor="middle">
                 tid (min)
             </text>
 
+            {/* Legend */}
             <g transform={`translate(${pad + 8}, ${pad + 14})`}>
                 <circle r="4" fill="#1b73e8" />
                 <text x="10" y="3" fontSize="11">

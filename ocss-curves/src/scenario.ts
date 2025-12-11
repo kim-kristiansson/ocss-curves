@@ -39,10 +39,10 @@ export type Disturbance =
 // ---- Effekter (endast kolhalt) ----
 export type ChannelEffects = {
     noiseFactor?: number;   // enables render-only noise if > 0
-    driftPerMin?: number;   // per-minute rate added to legacy rate
+    driftPerMin?: number;   // per-minute rate added to legacy rate (only during hold phase)
     spikeAtStart?: number;  // spike at window/step start
     flatline?: boolean;     // freeze value
-    offset?: number;        // <-- NEW: constant additive bias (applied to STATE)
+    offset?: number;        // constant additive bias (applied to STATE)
 };
 
 export type Effects = { carbon?: ChannelEffects };
@@ -511,10 +511,10 @@ export const exampleScenario: Step[] = [
         settleMin: 10,
         holdMin: 60,
         label: "Sätt kolhalt 0.60",
-        effects: { carbon: { noiseFactor: 1.2, offset: 0 } },
+        effects: { carbon: { noiseFactor: 1.2 } },
         effectsWindows: [
-            { id: "w1", startMin: 0, duration: 5, carbon: { noiseFactor: 2, offset: +0.015 } },   // visible positive offset
-            { id: "w2", startMin: 5, duration: 10, carbon: { driftPerMin: -0.001, offset: -0.010 } }, // drift + negative offset
+            { id: "w1", startMin: 0, duration: 5, carbon: { noiseFactor: 2, offset: +0.01 } },
+            { id: "w2", startMin: 15, duration: 30, carbon: { driftPerMin: 0.0002 } },  // subtle drift during hold
         ],
     },
     {
@@ -524,7 +524,7 @@ export const exampleScenario: Step[] = [
         settleMin: 1,
         holdMin: 120,
         label: "Berika snabbt till 1.20",
-        effectsWindows: [{ id: "w3", startMin: 0, duration: 3, carbon: { spikeAtStart: 0.05, noiseFactor: 1.5, offset: 0 } }],
+        effectsWindows: [{ id: "w3", startMin: 0, duration: 3, carbon: { spikeAtStart: 0.03, noiseFactor: 1.5 } }],
     },
     {
         id: "s4",
@@ -533,7 +533,7 @@ export const exampleScenario: Step[] = [
         settleMin: 1,
         holdMin: 120,
         label: "Diffundera till 0.70",
-        effects: { carbon: { driftPerMin: -0.001, offset: -0.005 } }, // small persistent bias
+        effectsWindows: [{ id: "w4", startMin: 5, duration: 100, carbon: { driftPerMin: -0.0001 } }],  // slow negative drift
     },
     { id: "s5", kind: "SetTemp", to: 860, settleMin: 30, holdMin: 30, label: "Sänk till 860" },
 ];
